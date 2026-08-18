@@ -158,6 +158,10 @@ showing a blank.
 
 ## Changelog
 
+- **Closed line: HP not kW, `L=` prefix, one line; Head H in feet** — same
+  changes as pump-selector. Price/discount stay unaffected by the head-unit
+  toggle, verified.
+
 - **Closed line cards now also show Motor and Pump Length** below the
   entered Q/H — same as pump-selector. Price/discount stay open-card only,
   as before; this third line is just kW and mm.

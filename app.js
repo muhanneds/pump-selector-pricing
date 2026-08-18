@@ -80,6 +80,46 @@ function toggleFlowUnit(){
 }
 
 // ---------------------------------------------------------------------------
+// Head unit (m vs ft) — same pattern as flow unit above. Every stored H
+// (selState.H, line.H) and every call into the engine stays in metres always
+// (that's the unit the pump curves themselves are digitised in); this layer
+// only converts the Head H field's own display/input, on both screens.
+// ---------------------------------------------------------------------------
+const STORE_KEY_HEADUNIT = 'msp_head_unit_v1';
+const FT_PER_M = 3.28084;
+let headUnit = loadHeadUnit();
+function loadHeadUnit(){
+  try{
+    const v = localStorage.getItem(STORE_KEY_HEADUNIT);
+    if (v === 'ft' || v === 'm') return v;
+  }catch(e){}
+  return 'm';
+}
+function saveHeadUnit(){ try{ localStorage.setItem(STORE_KEY_HEADUNIT, headUnit); }catch(e){} }
+function headUnitLabel(){ return headUnit === 'ft' ? 'ft' : 'm'; }
+
+// Stored metres -> what the field should display. Native unit passes through
+// untouched (no rounding) so nothing you typed in metres is ever altered.
+function hToDisplay(storedM){
+  if (storedM === '' || storedM === null || storedM === undefined) return storedM;
+  if (headUnit !== 'ft') return storedM;
+  const n = Number(storedM);
+  return isNaN(n) ? storedM : round(n * FT_PER_M, 3);
+}
+// What the field holds -> the true metres value to store and feed the engine.
+function hFromDisplay(displayVal){
+  if (displayVal === '' || displayVal === null || displayVal === undefined) return displayVal;
+  if (headUnit !== 'ft') return displayVal;
+  const n = Number(displayVal);
+  return isNaN(n) ? displayVal : n / FT_PER_M;
+}
+function toggleHeadUnit(){
+  headUnit = headUnit === 'ft' ? 'm' : 'ft';
+  saveHeadUnit();
+  render();
+}
+
+// ---------------------------------------------------------------------------
 // Core compute: mirrors INPUT!C17..C32 / TENDER!G..P exactly, via engine.js
 // ---------------------------------------------------------------------------
 function computeDuty(material, sizeClass, frequency, Q, H, safetyPct){
@@ -345,7 +385,7 @@ function renderSelectorHTML(){
         </div>
         <div>
           <label>${t('headH')}</label>
-          <div class="numfield"><input type="number" inputmode="decimal" id="inputH" value="${selState.H}"><span class="unit"><bdi>m</bdi></span></div>
+          <div class="numfield"><input type="number" inputmode="decimal" id="inputH" value="${hToDisplay(selState.H)}"><button type="button" class="unit unit-toggle" onclick="toggleHeadUnit()" title="${headUnit==='ft'?'m':'ft'}"><bdi>${headUnitLabel()}</bdi></button></div>
         </div>
       </div>
       <div class="field">
@@ -376,9 +416,8 @@ function wireSelectorEvents(){
   const hEl = document.getElementById('inputH');
   const sEl = document.getElementById('inputSafety');
   qEl.addEventListener('input', ()=>{ selState.Q = qFromDisplay(qEl.value); saveSelectorState(); renderInPlaceSelector(); });
-  [ [hEl,'H'], [sEl,'safety'] ].forEach(([el,key])=>{
-    el.addEventListener('input', ()=>{ selState[key] = el.value; saveSelectorState(); renderInPlaceSelector(); });
-  });
+  hEl.addEventListener('input', ()=>{ selState.H = hFromDisplay(hEl.value); saveSelectorState(); renderInPlaceSelector(); });
+  sEl.addEventListener('input', ()=>{ selState.safety = sEl.value; saveSelectorState(); renderInPlaceSelector(); });
 }
 
 // Refresh the computed output only. The form — and therefore the focused input
@@ -424,7 +463,7 @@ function renderTenderHTML(){
 // What the user actually typed for this line, in whichever unit is currently
 // selected — shown in the collapsed summary instead of a computed result.
 function enteredDutyText(Q, H){
-  return t('enteredDuty', { q: bidi(fmt(Number(qToDisplay(Q)), 2)), u: bidi(flowUnitLabel()), h: bidi(fmt(H, 2)) });
+  return t('enteredDuty', { q: bidi(fmt(Number(qToDisplay(Q)), 2)), u: bidi(flowUnitLabel()), h: bidi(fmt(Number(hToDisplay(H)), 2)), hu: bidi(headUnitLabel()) });
 }
 
 // Computed parts of a tender line, separated from its form controls so typing
@@ -448,7 +487,7 @@ function lineOutputs(line){
       const price = r.primary.model.price;
       const netPrice = price != null ? price * (100-disc)/100 : null;
       summaryModel = `<bdi>${r.primary.model.name}</bdi>`;
-      summaryExtra = `<bdi>${fmt(r.primary.model.kw,2)} kW · ${r.primary.model.len ? r.primary.model.len+' mm' : '—'}</bdi>`;
+      summaryExtra = `<bdi>${fmt(r.primary.model.hp,2)} HP · L=${r.primary.model.len ? r.primary.model.len+' mm' : '—'}</bdi>`;
       stripHTML = `
         <div class="result-strip">
           <span class="rmodel"><bdi>${r.primary.model.name}</bdi></span>
@@ -498,7 +537,7 @@ function renderLineCard(line, idx){
       </div>
       <div class="field row2">
         <div><label>${t('flowQUnit')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="Q" value="${qToDisplay(line.Q)}"><button type="button" class="unit unit-toggle" onclick="toggleFlowUnit()" title="${otherFlowUnitLabel()}"><bdi>${flowUnitLabel()}</bdi></button></div></div>
-        <div><label>${t('headHUnit')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="H" value="${line.H}"></div></div>
+        <div><label>${t('headHUnit')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="H" value="${hToDisplay(line.H)}"><button type="button" class="unit unit-toggle" onclick="toggleHeadUnit()" title="${headUnit==='ft'?'m':'ft'}"><bdi>${headUnitLabel()}</bdi></button></div></div>
       </div>
       <div class="field" style="max-width:160px;">
         <label>${t('discountRate')}</label>
@@ -565,7 +604,7 @@ function wireTenderEvents(){
       const id = card.dataset.id;
       const line = tenderLines.find(l=>l.id===id);
       const field = e.target.dataset.field;
-      line[field] = (field === 'Q') ? qFromDisplay(e.target.value) : e.target.value;
+      line[field] = (field === 'Q') ? qFromDisplay(e.target.value) : (field === 'H') ? hFromDisplay(e.target.value) : e.target.value;
       saveTenderLines();
       // Update only the summary, result strip, and the page-level total.
       // Rebuilding the card (or any other input) would destroy whichever

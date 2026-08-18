@@ -283,7 +283,7 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 .line-card-head .summary{ flex:1; min-width:0; }
 .line-card-head .summary .m1{ font-family: var(--font-mono); font-weight:700; font-size:14.5px; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .line-card-head .summary .m2{ font-size:11.5px; color: var(--ink-soft); margin-top:1px; }
-.line-card-head .summary .m3{ font-family: var(--font-mono); font-size:11px; color: var(--ink-faint); margin-top:2px; }
+.line-card-head .summary .m3{ font-family: var(--font-mono); font-size:11px; color: var(--ink-faint); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .line-card-head .chev{ color: var(--ink-faint); transition: transform .15s; flex-shrink:0; }
 .line-card.open .chev{ transform: rotate(180deg); }
 .line-card-body{ padding: 0 14px 14px; border-top:1px solid var(--line); }
