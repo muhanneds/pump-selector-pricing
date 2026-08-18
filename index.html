@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>MSP Pump Selector</title>
+<meta name="description" content="Submersible pump selection & tender tool">
+<meta name="theme-color" content="#1B3A6B">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pump Selector">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div>
+        <h1 id="appTitle">MSP Pump Selector</h1>
+        <div class="sub" id="topSub">Selector</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <select class="lang-select" id="langSel" onchange="changeLang(this.value)">
+        <option value="en">EN</option>
+        <option value="tr">TR</option>
+        <option value="ar">AR</option>
+        <option value="es">ES</option>
+      </select>
+      <div class="freq-pill" id="freqPill">50Hz</div>
+      <img class="brand-logo" src="icons/msp-logo-white.png" alt="MSP Pumps &amp; Motors">
+    </div>
+  </div>
+
+  <main id="main"></main>
+
+  <div id="toast"></div>
+
+  <nav class="tabbar">
+    <button id="tabSelector" class="active" onclick="switchTab('selector')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span id="tabSelectorLabel">Selector</span>
+    </button>
+    <button id="tabTender" onclick="switchTab('tender')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      <span id="tabTenderLabel">Tender</span>
+    </button>
+  </nav>
+
+</div>
+
+<script src="i18n.js"></script>
+<script src="engine.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
