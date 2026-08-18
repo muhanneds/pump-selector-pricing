@@ -188,7 +188,7 @@ function saveTenderLines(){
 }
 function newLine(){
   return { id: Date.now()+Math.random().toString(16).slice(2), material:'Stainless Steel',
-           sizeClass:'6plus', frequency:'50Hz', Q:'', H:'', tag:'', discount:0 };
+           sizeClass:'6plus', frequency:'50Hz', Q:'', H:'', safety:0, tag:'', discount:0 };
 }
 
 // Sum of every line's net price (list price less its own discount rate).
@@ -197,9 +197,9 @@ function newLine(){
 function tenderTotal(){
   let total = 0, hasAnyPrice = false;
   for (const line of tenderLines){
-    const Q = Number(line.Q)||0, H = Number(line.H)||0;
+    const Q = Number(line.Q)||0, H = Number(line.H)||0, safety = Number(line.safety)||0;
     if (Q <= 0 || H <= 0) continue;
-    const r = computeDuty(line.material, line.sizeClass, line.frequency, Q, H, 0);
+    const r = computeDuty(line.material, line.sizeClass, line.frequency, Q, H, safety);
     if (r.primary && r.primary.model && r.primary.model.price != null){
       hasAnyPrice = true;
       const disc = Number(line.discount)||0;
@@ -469,8 +469,8 @@ function enteredDutyText(Q, H){
 // Computed parts of a tender line, separated from its form controls so typing
 // can refresh them without rebuilding the inputs (see renderInPlaceSelector).
 function lineOutputs(line){
-  const Q = Number(line.Q)||0, H = Number(line.H)||0;
-  const r = computeDuty(line.material, line.sizeClass, line.frequency, Q, H, 0);
+  const Q = Number(line.Q)||0, H = Number(line.H)||0, safety = Number(line.safety)||0;
+  const r = computeDuty(line.material, line.sizeClass, line.frequency, Q, H, safety);
   const disc = Number(line.discount)||0;
 
   let summaryModel = '—', summaryMeta = t('enterQH'), summaryExtra = '';
@@ -522,9 +522,11 @@ function renderLineCard(line, idx){
     <div class="line-card-head" onclick="toggleLine('${line.id}')">
       <div class="line-num">${idx+1}</div>
       <div class="summary">
-        <div class="m1">${summaryModel}</div>
+        <div class="m1-row">
+          <div class="m1">${summaryModel}</div>
+          ${summaryExtra ? `<div class="m3">${summaryExtra}</div>` : ''}
+        </div>
         <div class="m2">${summaryMeta}</div>
-        ${summaryExtra ? `<div class="m3">${summaryExtra}</div>` : ''}
       </div>
       <svg class="chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
@@ -539,9 +541,15 @@ function renderLineCard(line, idx){
         <div><label>${t('flowQUnit')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="Q" value="${qToDisplay(line.Q)}"><button type="button" class="unit unit-toggle" onclick="toggleFlowUnit()" title="${otherFlowUnitLabel()}"><bdi>${flowUnitLabel()}</bdi></button></div></div>
         <div><label>${t('headHUnit')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="H" value="${hToDisplay(line.H)}"><button type="button" class="unit unit-toggle" onclick="toggleHeadUnit()" title="${headUnit==='ft'?'m':'ft'}"><bdi>${headUnitLabel()}</bdi></button></div></div>
       </div>
-      <div class="field" style="max-width:160px;">
-        <label>${t('discountRate')}</label>
-        <div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="discount" value="${line.discount||0}"><span class="unit">%</span></div>
+      <div class="field row2">
+        <div>
+          <label>${t('safety')}</label>
+          <div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="safety" value="${line.safety||0}"><span class="unit">%</span></div>
+        </div>
+        <div>
+          <label>${t('discountRate')}</label>
+          <div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="discount" value="${line.discount||0}"><span class="unit">%</span></div>
+        </div>
       </div>
       <div class="strip-slot">${stripHTML}</div>
       <div class="field" style="display:flex; gap:8px; margin-top:14px;">
@@ -617,7 +625,7 @@ function wireTenderEvents(){
       // or remove it as that changes, rather than assuming it's always there.
       let m3 = summaryEl.querySelector('.m3');
       if (out.summaryExtra){
-        if (!m3){ m3 = document.createElement('div'); m3.className = 'm3'; summaryEl.appendChild(m3); }
+        if (!m3){ m3 = document.createElement('div'); m3.className = 'm3'; summaryEl.querySelector('.m1-row').appendChild(m3); }
         m3.innerHTML = out.summaryExtra;
       } else if (m3){
         m3.remove();

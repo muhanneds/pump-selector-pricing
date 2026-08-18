@@ -71,7 +71,7 @@ const STRINGS = {
     duplicate:'Çoğalt', del:'Sil',
     lineDuplicated:'Satır çoğaltıldı', lineRemoved:'Satır silindi',
     oorCaps:'ARALIK DIŞI', noMatchIn:'{tag} serisinde eşleşme yok', altShort:'Alt',
-    list:'Liste', percentOff:'%{pct} indirim', discountRate:'İndirim oranı',
+    list:'Liste', percentOff:'%{pct} indirim', discountRate:'İskonto',
     tenderTotalLabel:'Teklif toplamı (indirim sonrası)'
   },
   ar: {

@@ -158,6 +158,12 @@ showing a blank.
 
 ## Changelog
 
+- **HP/Length moved to the top-right corner** next to the model name (same
+  as pump-selector). **Added Safety margin**, placed to the left of Discount
+  rate in its own row — both now feed the line's own result and the
+  tender-wide total, verified. **Turkish "Discount rate" renamed to
+  "İskonto"** per request.
+
 - **Closed line: HP not kW, `L=` prefix, one line; Head H in feet** — same
   changes as pump-selector. Price/discount stay unaffected by the head-unit
   toggle, verified.
