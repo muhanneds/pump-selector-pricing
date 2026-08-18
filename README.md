@@ -158,6 +158,16 @@ showing a blank.
 
 ## Changelog
 
+- **Tender screen revised** — same four changes as pump-selector, adapted for
+  the price/discount row: closed line cards show the entered Q/H instead of a
+  computed result; Motor + Pump Length get their own two-column stat row when
+  a card is open (price/discount stays in its own row below, unaffected);
+  Material/Bore/Freq `<select>` elements now have real styling instead of
+  scattering across the row unstyled; Flow Q can be entered in L/s via a
+  click-to-toggle unit pill, shared with the Selector. The tender total keeps
+  reading `line.Q` directly (always m³/h internally), so it's unaffected by
+  which unit is currently displayed. Full detail in pump-selector's README.
+
 - **New Noryl 6"+ series, "Any" ladder redesign, data corrections** — same
   update as pump-selector, ported from the pricing export
   (`Desktop\projects\MSP_Pump_Selector_WithPricing`) so list prices stayed

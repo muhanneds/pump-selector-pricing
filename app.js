@@ -33,6 +33,53 @@ function toast(msg){
 }
 
 // ---------------------------------------------------------------------------
+// Flow unit (m³/h vs L/s) — a display/input preference only. Every stored Q
+// (selState.Q, line.Q) and every call into the engine stays in m³/h always;
+// this layer just converts at the edges so the field can be typed into and
+// read in whichever unit the user picked, on both screens at once.
+// ---------------------------------------------------------------------------
+const STORE_KEY_FLOWUNIT = 'msp_flow_unit_v1';
+let flowUnit = loadFlowUnit();
+function loadFlowUnit(){
+  try{
+    const v = localStorage.getItem(STORE_KEY_FLOWUNIT);
+    if (v === 'ls' || v === 'm3h') return v;
+  }catch(e){}
+  return 'm3h';
+}
+function saveFlowUnit(){ try{ localStorage.setItem(STORE_KEY_FLOWUNIT, flowUnit); }catch(e){} }
+function flowUnitLabel(){ return flowUnit === 'ls' ? 'L/s' : 'm³/h'; }
+function otherFlowUnitLabel(){ return flowUnit === 'ls' ? 'm³/h' : 'L/s'; }
+function round(n, d){ const p = Math.pow(10, d); return Math.round(n * p) / p; }
+
+// Stored m³/h -> what the field should display. Native unit passes through
+// untouched (no rounding) so nothing you typed in m³/h is ever altered.
+function qToDisplay(storedMh){
+  if (storedMh === '' || storedMh === null || storedMh === undefined) return storedMh;
+  if (flowUnit !== 'ls') return storedMh;
+  const n = Number(storedMh);
+  return isNaN(n) ? storedMh : round(n / 3.6, 3);
+}
+// What the field holds -> the true m³/h value to store and feed the engine.
+function qFromDisplay(displayVal){
+  if (displayVal === '' || displayVal === null || displayVal === undefined) return displayVal;
+  if (flowUnit !== 'ls') return displayVal;
+  const n = Number(displayVal);
+  return isNaN(n) ? displayVal : n * 3.6;
+}
+// The other unit's equivalent, for the cross-reference hint/summary.
+function qOtherUnit(storedMh){
+  const n = Number(storedMh);
+  if (isNaN(n)) return null;
+  return flowUnit === 'ls' ? n : n / 3.6;
+}
+function toggleFlowUnit(){
+  flowUnit = flowUnit === 'ls' ? 'm3h' : 'ls';
+  saveFlowUnit();
+  render(); // a discrete click, not a keystroke — a full re-render is fine here
+}
+
+// ---------------------------------------------------------------------------
 // Core compute: mirrors INPUT!C17..C32 / TENDER!G..P exactly, via engine.js
 // ---------------------------------------------------------------------------
 function computeDuty(material, sizeClass, frequency, Q, H, safetyPct){
@@ -263,7 +310,7 @@ function renderHintHTML(ready, r){
   const models = (r.primaryTag!=='OUT OF RANGE' && r.primary && r.primary.maxStages)
     ? ' · ' + t('modelsIn', {n: bidi(r.primary.maxStages), tag: bidi(prettyTag(r.primaryTag))})
     : '';
-  return `<div class="hint">${t('designHead', {h: bidi(fmt(r.designHead)), ls: bidi(fmt(Number(selState.Q)/3.6,2))})}${models}</div>`;
+  return `<div class="hint">${t('designHead', {h: bidi(fmt(r.designHead)), ls: bidi(fmt(qOtherUnit(selState.Q),2)), u: bidi(otherFlowUnitLabel())})}${models}</div>`;
 }
 
 function renderSelectorHTML(){
@@ -294,7 +341,7 @@ function renderSelectorHTML(){
       <div class="field row2">
         <div>
           <label>${t('flowQ')}</label>
-          <div class="numfield"><input type="number" inputmode="decimal" id="inputQ" value="${selState.Q}"><span class="unit"><bdi>m³/h</bdi></span></div>
+          <div class="numfield"><input type="number" inputmode="decimal" id="inputQ" value="${qToDisplay(selState.Q)}"><button type="button" class="unit unit-toggle" onclick="toggleFlowUnit()" title="${otherFlowUnitLabel()}"><bdi>${flowUnitLabel()}</bdi></button></div>
         </div>
         <div>
           <label>${t('headH')}</label>
@@ -328,7 +375,8 @@ function wireSelectorEvents(){
   const qEl = document.getElementById('inputQ');
   const hEl = document.getElementById('inputH');
   const sEl = document.getElementById('inputSafety');
-  [ [qEl,'Q'], [hEl,'H'], [sEl,'safety'] ].forEach(([el,key])=>{
+  qEl.addEventListener('input', ()=>{ selState.Q = qFromDisplay(qEl.value); saveSelectorState(); renderInPlaceSelector(); });
+  [ [hEl,'H'], [sEl,'safety'] ].forEach(([el,key])=>{
     el.addEventListener('input', ()=>{ selState[key] = el.value; saveSelectorState(); renderInPlaceSelector(); });
   });
 }
@@ -373,6 +421,12 @@ function renderTenderHTML(){
   `;
 }
 
+// What the user actually typed for this line, in whichever unit is currently
+// selected — shown in the collapsed summary instead of a computed result.
+function enteredDutyText(Q, H){
+  return t('enteredDuty', { q: bidi(fmt(Number(qToDisplay(Q)), 2)), u: bidi(flowUnitLabel()), h: bidi(fmt(H, 2)) });
+}
+
 // Computed parts of a tender line, separated from its form controls so typing
 // can refresh them without rebuilding the inputs (see renderInPlaceSelector).
 function lineOutputs(line){
@@ -383,23 +437,25 @@ function lineOutputs(line){
   let summaryModel = '—', summaryMeta = t('enterQH');
   let stripHTML = '';
   if (Q > 0 && H > 0){
+    summaryMeta = enteredDutyText(Q, H);
     if (r.primaryTag === 'OUT OF RANGE'){
-      summaryModel = t('outOfRange'); summaryMeta = `${materialLabel(line.material)} · <bdi>${Q} m³/h @ ${H} m</bdi>`;
+      summaryModel = t('outOfRange');
       stripHTML = `<div class="result-strip"><span class="rmodel oor">${t('oorCaps')}</span></div>`;
     } else if (!r.primary.model){
-      summaryModel = t('noMatch'); summaryMeta = `<bdi>${prettyTag(r.primaryTag)}</bdi>`;
+      summaryModel = t('noMatch');
       stripHTML = `<div class="result-strip"><span class="rmodel oor">${t('noMatchIn', {tag: bidi(prettyTag(r.primaryTag))})}</span></div>`;
     } else {
       const price = r.primary.model.price;
       const netPrice = price != null ? price * (100-disc)/100 : null;
       summaryModel = `<bdi>${r.primary.model.name}</bdi>`;
-      summaryMeta = netPrice != null
-        ? `<bdi>${fmt(r.primary.achievedHead)} m · ${fmtPrice(netPrice)}</bdi>`
-        : `<bdi>${fmt(r.primary.achievedHead)} m · ${fmt(r.primary.model.hp,2)} HP</bdi>`;
       stripHTML = `
         <div class="result-strip">
           <span class="rmodel"><bdi>${r.primary.model.name}</bdi></span>
-          <span class="rmeta"><bdi>${fmt(r.primary.achievedHead)} m · ${fmt(r.primary.model.kw,2)} kW · ${r.primary.model.len?r.primary.model.len+'mm':'—'}</bdi></span>
+          <span class="rmeta"><bdi>${fmt(r.primary.achievedHead)} m</bdi></span>
+        </div>
+        <div class="line-stats">
+          <div><div class="stat-label">${t('motor')}</div><div class="stat-value"><bdi>${fmt(r.primary.model.kw,2)} kW</bdi></div></div>
+          <div><div class="stat-label">${t('length')}</div><div class="stat-value"><bdi>${r.primary.model.len ? r.primary.model.len+' mm' : '—'}</bdi></div></div>
         </div>
         ${price != null ? `<div class="result-strip price-strip">
           <span class="rmeta">${t('list')} <bdi>${fmtPrice(price)}</bdi>${disc>0?' · '+t('percentOff',{pct: bidi(disc)}):''}</span>
@@ -439,7 +495,7 @@ function renderLineCard(line, idx){
         <div><label>${t('freq')}</label><select class="line-select" data-field="frequency">${freqOpts}</select></div>
       </div>
       <div class="field row2">
-        <div><label>${t('flowQUnit')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="Q" value="${line.Q}"></div></div>
+        <div><label>${t('flowQUnit')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="Q" value="${qToDisplay(line.Q)}"><button type="button" class="unit unit-toggle" onclick="toggleFlowUnit()" title="${otherFlowUnitLabel()}"><bdi>${flowUnitLabel()}</bdi></button></div></div>
         <div><label>${t('headHUnit')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="H" value="${line.H}"></div></div>
       </div>
       <div class="field" style="max-width:160px;">
@@ -506,7 +562,8 @@ function wireTenderEvents(){
       const card = e.target.closest('.line-card');
       const id = card.dataset.id;
       const line = tenderLines.find(l=>l.id===id);
-      line[e.target.dataset.field] = e.target.value;
+      const field = e.target.dataset.field;
+      line[field] = (field === 'Q') ? qFromDisplay(e.target.value) : e.target.value;
       saveTenderLines();
       // Update only the summary, result strip, and the page-level total.
       // Rebuilding the card (or any other input) would destroy whichever

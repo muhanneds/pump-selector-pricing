@@ -164,10 +164,37 @@ main{ flex:1; padding: 16px 14px calc(96px + env(safe-area-inset-bottom)); }
 }
 .numfield input::-webkit-outer-spin-button,
 .numfield input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
-.numfield .unit{ font-size:12px; color: var(--ink-faint); font-weight:700; margin-left:8px; }
+.numfield .unit{ font-size:12px; color: var(--ink-faint); font-weight:700; margin-left:8px; flex:none; }
+/* Flow Q's unit doubles as a click target to switch m³/h <-> L/s. Same box as
+   the plain unit label, but interactive: a pill so it reads as a control. */
+button.unit.unit-toggle{
+  font-family:inherit; cursor:pointer; border:1px solid var(--line);
+  background: var(--surface); border-radius:999px; padding:3px 9px;
+  transition: background .15s, border-color .15s;
+}
+button.unit.unit-toggle:hover{ background: var(--surface-2); border-color: var(--amber-deep); }
+button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--amber-deep); color: var(--ink); }
 
 .row2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-.row3{ display:grid; grid-template-columns: 1.3fr 1.3fr 1fr; gap:10px; }
+.row3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+
+/* Native <select>s had no styling at all before this — they shrank to their
+   own text and scattered unevenly across row3. Give them the same box
+   language as .numfield so Material/Bore/Freq line up as a real row. */
+.line-select{
+  width:100%; height:43px; box-sizing:border-box;
+  border:1.5px solid var(--line); border-radius: var(--radius-md);
+  background: var(--surface) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%235B6B85" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>') no-repeat right 10px center;
+  background-size: 15px;
+  padding: 0 30px 0 10px;
+  font-family: inherit; font-size: 13px; font-weight:600; color: var(--ink);
+  appearance:none; -webkit-appearance:none;
+  text-overflow: ellipsis;
+}
+[dir="rtl"] .line-select{
+  background-position: left 10px center;
+  padding: 0 10px 0 30px;
+}
 
 /* ---------- Result "nameplate" ---------- */
 .plate{
@@ -269,6 +296,16 @@ main{ flex:1; padding: 16px 14px calc(96px + env(safe-area-inset-bottom)); }
 .result-strip .rmodel{ font-family: var(--font-mono); font-weight:700; font-size:13.5px; color:var(--navy);}
 .result-strip .rmeta{ font-family: var(--font-mono); font-size:12px; color: var(--ink-soft); }
 .oor{ color: var(--danger) !important; }
+
+/* Motor + Pump Length, together as one glanceable row when a line is open —
+   the two numbers a buyer asks about first, alongside model, head and price. */
+.line-stats{
+  display:grid; grid-template-columns: 1fr 1fr; gap:10px;
+  background: var(--surface-2); border-radius: var(--radius-md);
+  padding: 10px 12px; margin-top: 8px;
+}
+.line-stats .stat-label{ font-size:10px; color: var(--ink-faint); text-transform:uppercase; letter-spacing:.5px; font-weight:700; }
+.line-stats .stat-value{ font-family: var(--font-mono); font-size:15px; font-weight:700; color: var(--ink); margin-top:3px; }
 
 /* ---------- Pricing ---------- */
 .result-strip.price-strip{ background: #FFFBEE; border:1px solid var(--amber-deep); }
@@ -448,12 +485,14 @@ main{ flex:1; padding: 16px 14px calc(96px + env(safe-area-inset-bottom)); }
 bdi{ unicode-bidi: isolate; }
 [dir="rtl"] .plate .model,
 [dir="rtl"] .plate-grid .stat-value,
+[dir="rtl"] .line-stats .stat-value,
 [dir="rtl"] .tender-count,
 [dir="rtl"] .result-strip .rmodel,
 [dir="rtl"] .result-strip .rmeta,
 [dir="rtl"] .altbox .alt-model,
 [dir="rtl"] .altbox .alt-head,
 [dir="rtl"] .line-card-head .summary .m1,
+[dir="rtl"] .line-card-head .summary .m2,
 [dir="rtl"] .price-total-value,
 [dir="rtl"] .numfield input{
   direction: ltr;
@@ -471,6 +510,7 @@ bdi{ unicode-bidi: isolate; }
 [dir="rtl"] .field > label,
 [dir="rtl"] .plate .plate-label,
 [dir="rtl"] .plate-grid .stat-label,
+[dir="rtl"] .line-stats .stat-label,
 [dir="rtl"] .altbox .alt-label{
   text-transform: none;
   letter-spacing: 0;
