@@ -158,6 +158,10 @@ showing a blank.
 
 ## Changelog
 
+- **Closed line cards now also show Motor and Pump Length** below the
+  entered Q/H — same as pump-selector. Price/discount stay open-card only,
+  as before; this third line is just kW and mm.
+
 - **Tender screen revised** — same four changes as pump-selector, adapted for
   the price/discount row: closed line cards show the entered Q/H instead of a
   computed result; Motor + Pump Length get their own two-column stat row when

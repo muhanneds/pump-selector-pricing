@@ -434,7 +434,7 @@ function lineOutputs(line){
   const r = computeDuty(line.material, line.sizeClass, line.frequency, Q, H, 0);
   const disc = Number(line.discount)||0;
 
-  let summaryModel = '—', summaryMeta = t('enterQH');
+  let summaryModel = '—', summaryMeta = t('enterQH'), summaryExtra = '';
   let stripHTML = '';
   if (Q > 0 && H > 0){
     summaryMeta = enteredDutyText(Q, H);
@@ -448,6 +448,7 @@ function lineOutputs(line){
       const price = r.primary.model.price;
       const netPrice = price != null ? price * (100-disc)/100 : null;
       summaryModel = `<bdi>${r.primary.model.name}</bdi>`;
+      summaryExtra = `<bdi>${fmt(r.primary.model.kw,2)} kW · ${r.primary.model.len ? r.primary.model.len+' mm' : '—'}</bdi>`;
       stripHTML = `
         <div class="result-strip">
           <span class="rmodel"><bdi>${r.primary.model.name}</bdi></span>
@@ -466,12 +467,12 @@ function lineOutputs(line){
     }
   }
 
-  return { summaryModel, summaryMeta, stripHTML };
+  return { summaryModel, summaryMeta, summaryExtra, stripHTML };
 }
 
 function renderLineCard(line, idx){
   const isOpen = openLineId === line.id;
-  const { summaryModel, summaryMeta, stripHTML } = lineOutputs(line);
+  const { summaryModel, summaryMeta, summaryExtra, stripHTML } = lineOutputs(line);
 
   const materialOpts = MATERIALS.map(m=>`<option value="${m}" ${line.material===m?'selected':''}>${materialLabel(m)}</option>`).join('');
   const sizeOpts = SIZES.map(([v])=>`<option value="${v}" ${line.sizeClass===v?'selected':''}>${sizeLabel(v)}</option>`).join('');
@@ -484,6 +485,7 @@ function renderLineCard(line, idx){
       <div class="summary">
         <div class="m1">${summaryModel}</div>
         <div class="m2">${summaryMeta}</div>
+        ${summaryExtra ? `<div class="m3">${summaryExtra}</div>` : ''}
       </div>
       <svg class="chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
@@ -569,8 +571,18 @@ function wireTenderEvents(){
       // Rebuilding the card (or any other input) would destroy whichever
       // field is being typed into and reset its caret to 0.
       const out = lineOutputs(line);
-      card.querySelector('.summary .m1').innerHTML = out.summaryModel;
-      card.querySelector('.summary .m2').innerHTML = out.summaryMeta;
+      const summaryEl = card.querySelector('.summary');
+      summaryEl.querySelector('.m1').innerHTML = out.summaryModel;
+      summaryEl.querySelector('.m2').innerHTML = out.summaryMeta;
+      // .m3 (motor/length) only exists once there's a matched model — create
+      // or remove it as that changes, rather than assuming it's always there.
+      let m3 = summaryEl.querySelector('.m3');
+      if (out.summaryExtra){
+        if (!m3){ m3 = document.createElement('div'); m3.className = 'm3'; summaryEl.appendChild(m3); }
+        m3.innerHTML = out.summaryExtra;
+      } else if (m3){
+        m3.remove();
+      }
       const slot = card.querySelector('.strip-slot');
       if (slot) slot.innerHTML = out.stripHTML;
       const totalSlot = document.getElementById('tenderTotalSlot');
