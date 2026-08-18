@@ -16,23 +16,28 @@ const LADDER_4ONLY = {
 const CAST_IRON_LADDER = [
   [20,'MCP518'],[28,'MCP625'],[35,'MCP630'],[50,'MCP643'],[65,'MCP665'],[70,'MCP766'],
   [100,'MCP790'],[105,'MCP690'],[128,'MCP8122'],[160,'MCP8140'],[200,'MCP8180'],
-  [216,'MCP9180'],[240,'MCP8220'],[300.1,'MCP10350'],[420,'MCP11400']
+  [216,'MCP9180'],[240,'MCP8220'],[300.1,'MCP10350'],[414,'MCP11400']
 ];
 
 const LADDER_6PLUS = {
-  'Noryl': [[18,'MNP618'],[24,'MNP628'],[36,'MNP638'],[52,'MNP645'],[68,'MNP660']],
+  'Noryl': [[12,'MNP612'],[18,'MNP618'],[26,'MNP628'],[40,'MNP638'],[58,'MNP645'],[76,'MNP660']],
   'Stainless Steel': [[12,'MSP610'],[20,'MSP617'],[32,'MSP630'],[36,'MSP636'],[48,'MSP646'],[64,'MSP660'],
                        [84,'MSP877'],[100,'MSP895'],[109.9,'MSP8105'],[110,'MSP8110'],[135,'MSP8125'],
                        [185,'MSP8160'],[280,'MSP10215']]
 };
 
-// "Any" = the 4"-only ladder immediately followed by the 6"+ ladder, evaluated as ONE
-// ascending chain (mirrors the workbook exactly, including the fact that MSP610's own
-// <=12 rule is shadowed by the earlier <=16 MSP414 rule and can never fire — a known
-// quirk in the original spreadsheet, preserved here for parity).
+// "Any" = one ascending chain where BORE NEVER GOES BACKWARDS. The small 4" series cover
+// the lowest flows, then the 6" series take over and keep it from the crossover upward.
+// MNP415 / MSP414 are deliberately absent here: they used to sit ABOVE the first 6" rung,
+// which made the recommended bore zigzag 4"->6"->4"->6" as flow increased. Both stay fully
+// reachable via the dedicated 4"-only bore choice.
 const LADDER_ANY = {
-  'Noryl': [...LADDER_4ONLY['Noryl'], ...LADDER_6PLUS['Noryl']],
-  'Stainless Steel': [...LADDER_4ONLY['Stainless Steel'], ...LADDER_6PLUS['Stainless Steel']]
+  'Noryl': [[2.7,'MNP402'],[3.6,'MNP404'],[5.4,'MNP406'],[8,'MNP408'],[10,'MNP409'],
+            [12,'MNP612'],[18,'MNP618'],[26,'MNP628'],[40,'MNP638'],[58,'MNP645'],[76,'MNP660']],
+  'Stainless Steel': [[2.4,'MSP402'],[4,'MSP403'],[6,'MSP405'],[10,'MSP408'],[11,'MSP409'],
+            [12,'MSP610'],[20,'MSP617'],[32,'MSP630'],[36,'MSP636'],[48,'MSP646'],
+            [64,'MSP660'],[84,'MSP877'],[100,'MSP895'],[109.9,'MSP8105'],[110,'MSP8110'],
+            [135,'MSP8125'],[185,'MSP8160'],[280,'MSP10215']]
 };
 
 const ALT_MAP = {
@@ -40,7 +45,7 @@ const ALT_MAP = {
                 MCP766:'MCP790',MCP790:'MCP690',MCP690:'MCP8122',MCP8122:'MCP8140',MCP8140:'MCP8180',
                 MCP8180:'MCP9180',MCP9180:'MCP8220',MCP8220:'MCP10350',MCP10350:'MCP11400',MCP11400:'MCP10350'},
   'Noryl': {MNP402:'MNP404',MNP404:'MNP406',MNP406:'MNP408',MNP408:'MNP409',MNP409:'MNP412',MNP412:'MNP415',
-            MNP415:'MNP618',MNP618:'MNP628',MNP628:'MNP638',MNP638:'MNP645',MNP645:'MNP660',MNP660:'MNP645'},
+            MNP415:'MNP612',MNP612:'MNP618',MNP618:'MNP628',MNP628:'MNP638',MNP638:'MNP645',MNP645:'MNP660',MNP660:'MNP645'},
   'Stainless Steel': {MSP402:'MSP403',MSP403:'MSP405',MSP405:'MSP408',MSP408:'MSP409',MSP409:'MSP414',
                        MSP414:'MSP610',MSP610:'MSP611',MSP617:'MSP625',MSP625:'MSP617',MSP630:'MSP625',
                        MSP636:'MSP646',MSP646:'MSP636',MSP660:'MSP877',MSP877:'MSP895',MSP895:'MSP8105',

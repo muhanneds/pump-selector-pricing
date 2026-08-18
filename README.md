@@ -158,6 +158,21 @@ showing a blank.
 
 ## Changelog
 
+- **New Noryl 6"+ series, "Any" ladder redesign, data corrections** — same
+  update as pump-selector, ported from the pricing export
+  (`Desktop\projects\MSP_Pump_Selector_WithPricing`) so list prices stayed
+  attached: new **MNP612** primary pick, "Any" rebuilt to stop MNP415/MSP414
+  from zigzagging the recommended bore, Cast Iron's top cutoff tightened
+  420→414, `MCP 643-32`'s length corrected to 4020mm. Also caught and fixed
+  the same defect as pump-selector before deploying: a trailing `null` in the
+  *flow* arrays (not heads) of MSP625 and MSP8125 that made both series
+  return no match for every realistic duty point — dropped it, verified both
+  series restored to their exact pre-update behaviour, now with a price
+  attached (MSP8125-05 → $2,850). Full detail in pump-selector's README.
+  All 6 previously-priceless models (`MCP 643-32` and the 5 `MNP612` stage
+  variants) now have real prices in this export — the pricing gap flagged
+  when this app was first built is resolved.
+
 - **Pricing companion app created.** Built from the same base as
   [pump-selector](https://muhanneds.github.io/pump-selector/) — bilingual
   EN/TR/AR/ES interface, RTL for Arabic, desktop layout, the typing-caret fix
