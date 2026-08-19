@@ -255,9 +255,9 @@ function renderSummaryHTML(){
     <tr>
       <td>${r.idx+1}</td>
       <td><bdi>${r.model}</bdi></td>
-      <td><bdi>${r.qty}</bdi></td>
       <td><bdi>${fmtPrice(r.price)}</bdi></td>
       <td>${r.disc>0 ? '<bdi>'+t('percentOff',{pct:r.disc})+'</bdi>' : '—'}</td>
+      <td><bdi>${r.qty}</bdi></td>
       <td><bdi>${fmtPrice(r.net)}</bdi></td>
       <td><bdi>${fmtPrice(r.lineTotal)}</bdi></td>
     </tr>`).join('');
@@ -270,8 +270,8 @@ function renderSummaryHTML(){
       <div class="summary-table-wrap">
         <table class="summary-table">
           <thead><tr>
-            <th>#</th><th>${t('selectedModel')}</th><th>${t('qty')}</th>
-            <th>${t('list')}</th><th>${t('discountRate')}</th><th>${t('net')}</th><th>${t('lineTotal')}</th>
+            <th>#</th><th>${t('selectedModel')}</th>
+            <th>${t('list')}</th><th>${t('discountRate')}</th><th>${t('qty')}</th><th>${t('net')}</th><th>${t('lineTotal')}</th>
           </tr></thead>
           <tbody>${rowsHTML || `<tr><td colspan="7" class="summary-empty">${t('noLines')}</td></tr>`}</tbody>
         </table>

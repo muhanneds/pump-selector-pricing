@@ -625,13 +625,17 @@ bdi{ unicode-bidi: isolate; }
 [dir="rtl"] #toast{ transform: translateX(50%) translateY(20px); right:50%; left:auto; }
 [dir="rtl"] #toast.show{ transform: translateX(50%) translateY(0); }
 
-/* Arabic has no capital letters — uppercasing and wide tracking hurt it. */
+/* Arabic has no capital letters — uppercasing and wide tracking hurt it
+   (wide tracking especially: it breaks the cursive joining between Arabic
+   letters, which reads as badly misaligned/broken text, not just untranslated
+   styling). */
 [dir="rtl"] .card h2,
 [dir="rtl"] .field > label,
 [dir="rtl"] .plate .plate-label,
 [dir="rtl"] .plate-grid .stat-label,
-[dir="rtl"] .line-stats .stat-label,
-[dir="rtl"] .altbox .alt-label{
+[dir="rtl"] .pump-stats .stat-label,
+[dir="rtl"] .altbox .alt-label,
+[dir="rtl"] .summary-table th{
   text-transform: none;
   letter-spacing: 0;
 }
