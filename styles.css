@@ -329,8 +329,11 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 /* Selected pump, motor, length and achieved head together as one glanceable
    strip once a line is open and matched — the numbers a buyer asks about
    first, all in one place instead of split across a result line + a grid. */
+/* Uneven columns: the model code (Selected Pump) is the longest value here
+   and the one most likely to truncate, while HM is always a short number —
+   give the model room to breathe instead of splitting the strip evenly. */
 .pump-stats{
-  display:grid; grid-template-columns: repeat(4,1fr); gap:8px;
+  display:grid; grid-template-columns: 1.8fr 1.1fr 1fr 0.75fr; gap:8px;
   background: var(--surface-2); border-radius: var(--radius-md);
   padding: 10px 12px; margin-top: 8px;
 }
