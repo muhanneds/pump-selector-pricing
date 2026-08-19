@@ -43,8 +43,11 @@ const STRINGS = {
     duplicate:'Duplicate', del:'Delete',
     lineDuplicated:'Line duplicated', lineRemoved:'Line removed',
     oorCaps:'OUT OF RANGE', noMatchIn:'No match in {tag}', altShort:'Alt',
-    list:'List', percentOff:'{pct}% off', discountRate:'Discount rate',
-    tenderTotalLabel:'Tender total (after discount)'
+    list:'List Price', percentOff:'{pct}% off', discountRate:'Discount rate',
+    tenderTotalLabel:'Tender total (after discount)',
+    selectedPump:'Selected Pump', unitNo:'Unit No', unitPrice:'Unit Price',
+    viewSummary:'View Summary', summaryTitle:'Tender Summary', close:'Close',
+    qty:'Qty', net:'Net', lineTotal:'Line total'
   },
   tr: {
     appTitle:'MSP Fiyat', tabSelector:'Seçici', tabTender:'Teklif',
@@ -71,8 +74,11 @@ const STRINGS = {
     duplicate:'Çoğalt', del:'Sil',
     lineDuplicated:'Satır çoğaltıldı', lineRemoved:'Satır silindi',
     oorCaps:'ARALIK DIŞI', noMatchIn:'{tag} serisinde eşleşme yok', altShort:'Alt',
-    list:'Liste', percentOff:'%{pct} indirim', discountRate:'İskonto',
-    tenderTotalLabel:'Teklif toplamı (indirim sonrası)'
+    list:'Liste Fiyatı', percentOff:'%{pct} indirim', discountRate:'İskonto',
+    tenderTotalLabel:'Teklif toplamı (indirim sonrası)',
+    selectedPump:'Seçilen Pompa', unitNo:'Adet', unitPrice:'Birim Fiyatı',
+    viewSummary:'Özeti Görüntüle', summaryTitle:'Teklif Özeti', close:'Kapat',
+    qty:'Adet', net:'Net', lineTotal:'Satır toplamı'
   },
   ar: {
     appTitle:'أسعار MSP', tabSelector:'المحدد', tabTender:'العطاء',
@@ -99,8 +105,11 @@ const STRINGS = {
     duplicate:'نسخ', del:'حذف',
     lineDuplicated:'تم نسخ البند', lineRemoved:'تم حذف البند',
     oorCaps:'خارج النطاق', noMatchIn:'لا يوجد تطابق في {tag}', altShort:'بديل',
-    list:'السعر', percentOff:'خصم {pct}%', discountRate:'نسبة الخصم',
-    tenderTotalLabel:'إجمالي العطاء (بعد الخصم)'
+    list:'السعر الأصلي', percentOff:'خصم {pct}%', discountRate:'نسبة الخصم',
+    tenderTotalLabel:'إجمالي العطاء (بعد الخصم)',
+    selectedPump:'المضخة المختارة', unitNo:'عدد الوحدات', unitPrice:'سعر الوحدة',
+    viewSummary:'عرض الملخص', summaryTitle:'ملخص العطاء', close:'إغلاق',
+    qty:'الكمية', net:'الصافي', lineTotal:'إجمالي البند'
   },
   es: {
     appTitle:'Precios MSP', tabSelector:'Selector', tabTender:'Licitación',
@@ -127,8 +136,11 @@ const STRINGS = {
     duplicate:'Duplicar', del:'Eliminar',
     lineDuplicated:'Línea duplicada', lineRemoved:'Línea eliminada',
     oorCaps:'FUERA DE RANGO', noMatchIn:'Sin coincidencia en {tag}', altShort:'Alt',
-    list:'Lista', percentOff:'{pct}% dto.', discountRate:'Tasa de descuento',
-    tenderTotalLabel:'Total de licitación (con descuento)'
+    list:'Precio de lista', percentOff:'{pct}% dto.', discountRate:'Tasa de descuento',
+    tenderTotalLabel:'Total de licitación (con descuento)',
+    selectedPump:'Bomba seleccionada', unitNo:'Cantidad', unitPrice:'Precio unitario',
+    viewSummary:'Ver resumen', summaryTitle:'Resumen de licitación', close:'Cerrar',
+    qty:'Cant.', net:'Neto', lineTotal:'Total de línea'
   }
 };
 

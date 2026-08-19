@@ -192,12 +192,13 @@ function saveTenderLines(){
 }
 function newLine(){
   return { id: Date.now()+Math.random().toString(16).slice(2), material:'Stainless Steel',
-           sizeClass:'6plus', frequency:'50Hz', Q:'', H:'', safety:0, tag:'', discount:0 };
+           sizeClass:'6plus', frequency:'50Hz', Q:'', H:'', safety:0, tag:'', discount:0, unitNo:1 };
 }
 
-// Sum of every line's net price (list price less its own discount rate).
-// Lines with no price data (OUT OF RANGE, no match, or a model missing a
-// price) simply don't contribute — they are not treated as zero.
+// Sum of every line's net price (list price less its own discount rate),
+// multiplied by that line's quantity (Unit No). Lines with no price data
+// (OUT OF RANGE, no match, or a model missing a price) simply don't
+// contribute — they are not treated as zero.
 function tenderTotal(){
   let total = 0, hasAnyPrice = false;
   for (const line of tenderLines){
@@ -207,7 +208,8 @@ function tenderTotal(){
     if (r.primary && r.primary.model && r.primary.model.price != null){
       hasAnyPrice = true;
       const disc = Number(line.discount)||0;
-      total += r.primary.model.price * (100-disc)/100;
+      const qty = Number(line.unitNo)||1;
+      total += r.primary.model.price * (100-disc)/100 * qty;
     }
   }
   return { total, hasAnyPrice };
@@ -217,9 +219,77 @@ function renderTenderTotalHTML(){
   const { total, hasAnyPrice } = tenderTotal();
   if (!hasAnyPrice) return '';
   return `<div class="card price-total">
-    <div class="price-total-label">${t('tenderTotalLabel')}</div>
-    <div class="price-total-value"><bdi>${fmtPrice(total)}</bdi></div>
+    <div>
+      <div class="price-total-label">${t('tenderTotalLabel')}</div>
+      <div class="price-total-value"><bdi>${fmtPrice(total)}</bdi></div>
+    </div>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="openSummary()">${t('viewSummary')}</button>
   </div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Tender summary sheet — a print-style rollup of every priced line, shown as
+// a full-screen overlay (see #summaryOverlay in index.html) rather than a
+// third tab, since it's a transient view onto Tender data, not its own state.
+// ---------------------------------------------------------------------------
+function summaryRows(){
+  const rows = [];
+  tenderLines.forEach((line, idx) => {
+    const Q = Number(line.Q)||0, H = Number(line.H)||0, safety = Number(line.safety)||0;
+    if (Q <= 0 || H <= 0) return;
+    const r = computeDuty(line.material, line.sizeClass, line.frequency, Q, H, safety);
+    if (!r.primary || !r.primary.model || r.primary.model.price == null) return;
+    const qty = Number(line.unitNo)||1;
+    const disc = Number(line.discount)||0;
+    const price = r.primary.model.price;
+    const net = price * (100-disc)/100;
+    rows.push({ idx, model: r.primary.model.name, qty, price, disc, net, lineTotal: net*qty });
+  });
+  return rows;
+}
+
+function renderSummaryHTML(){
+  const rows = summaryRows();
+  const grandTotal = rows.reduce((s,r)=>s+r.lineTotal, 0);
+  const rowsHTML = rows.map(r => `
+    <tr>
+      <td>${r.idx+1}</td>
+      <td><bdi>${r.model}</bdi></td>
+      <td><bdi>${r.qty}</bdi></td>
+      <td><bdi>${fmtPrice(r.price)}</bdi></td>
+      <td>${r.disc>0 ? '<bdi>'+t('percentOff',{pct:r.disc})+'</bdi>' : '—'}</td>
+      <td><bdi>${fmtPrice(r.net)}</bdi></td>
+      <td><bdi>${fmtPrice(r.lineTotal)}</bdi></td>
+    </tr>`).join('');
+  return `
+    <div class="summary-sheet">
+      <div class="summary-sheet-head">
+        <h2>${t('summaryTitle')}</h2>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeSummary()">${t('close')}</button>
+      </div>
+      <div class="summary-table-wrap">
+        <table class="summary-table">
+          <thead><tr>
+            <th>#</th><th>${t('selectedModel')}</th><th>${t('qty')}</th>
+            <th>${t('list')}</th><th>${t('discountRate')}</th><th>${t('net')}</th><th>${t('lineTotal')}</th>
+          </tr></thead>
+          <tbody>${rowsHTML || `<tr><td colspan="7" class="summary-empty">${t('noLines')}</td></tr>`}</tbody>
+        </table>
+      </div>
+      <div class="summary-grand">
+        <span>${t('tenderTotalLabel')}</span>
+        <span class="summary-grand-value"><bdi>${fmtPrice(grandTotal)}</bdi></span>
+      </div>
+    </div>`;
+}
+
+function openSummary(){
+  const overlay = document.getElementById('summaryOverlay');
+  overlay.innerHTML = renderSummaryHTML();
+  overlay.classList.add('open');
+}
+function closeSummary(){
+  document.getElementById('summaryOverlay').classList.remove('open');
 }
 
 // ---------------------------------------------------------------------------
@@ -409,7 +479,7 @@ function renderSelectorHTML(){
         <label>${t('frequency')}</label>
         <div class="segmented freq" id="freqSeg">${freqButtons}</div>
       </div>
-      <div class="field row2">
+      <div class="field row3">
         <div>
           <label>${t('flowQ')}</label>
           <div class="numfield"><input type="number" inputmode="decimal" id="inputQ" value="${qToDisplay(selState.Q)}"><button type="button" class="unit unit-toggle" onclick="toggleFlowUnit()" title="${otherFlowUnitLabel()}"><bdi>${flowUnitLabel()}</bdi></button></div>
@@ -418,10 +488,10 @@ function renderSelectorHTML(){
           <label>${t('headH')}</label>
           <div class="numfield"><input type="number" inputmode="decimal" id="inputH" value="${hToDisplay(selState.H)}"><button type="button" class="unit unit-toggle" onclick="toggleHeadUnit()" title="${headUnit==='ft'?'m':'ft'}"><bdi>${headUnitLabel()}</bdi></button></div>
         </div>
-      </div>
-      <div class="field">
-        <label>${t('safety')}</label>
-        <div class="numfield" style="max-width:140px"><input type="number" inputmode="decimal" id="inputSafety" value="${selState.safety}"><span class="unit">%</span></div>
+        <div>
+          <label>${t('safety')}</label>
+          <div class="numfield"><input type="number" inputmode="decimal" id="inputSafety" value="${selState.safety}"><span class="unit">%</span></div>
+        </div>
       </div>
       <div id="hintSlot">${renderHintHTML(ready, r)}</div>
     </div>
@@ -505,50 +575,51 @@ function lineOutputs(line){
   const disc = Number(line.discount)||0;
 
   let summaryModel = '—', summaryMeta = t('enterQH'), summaryExtra = '';
-  let stripHTML = '';
+  let pumpStatsHTML = '', priceHTML = '';
   let key = 'empty';
   if (Q > 0 && H > 0){
     summaryMeta = enteredDutyText(Q, H);
     if (r.primaryTag === 'OUT OF RANGE'){
       key = 'oor';
       summaryModel = t('outOfRange');
-      stripHTML = `<div class="result-strip"><span class="rmodel oor">${t('oorCaps')}</span></div>`;
+      pumpStatsHTML = `<div class="result-strip"><span class="rmodel oor">${t('oorCaps')}</span></div>`;
     } else if (!r.primary.model){
       key = 'nomatch:'+r.primaryTag;
       summaryModel = t('noMatch');
-      stripHTML = `<div class="result-strip"><span class="rmodel oor">${t('noMatchIn', {tag: bidi(prettyTag(r.primaryTag))})}</span></div>`;
+      pumpStatsHTML = `<div class="result-strip"><span class="rmodel oor">${t('noMatchIn', {tag: bidi(prettyTag(r.primaryTag))})}</span></div>`;
     } else {
       const price = r.primary.model.price;
       const netPrice = price != null ? price * (100-disc)/100 : null;
-      key = 'ok:'+r.primary.model.name+':'+r.primary.achievedHead+':'+disc;
+      const qty = Number(line.unitNo)||1;
+      const lineTotal = netPrice != null ? netPrice * qty : null;
+      key = 'ok:'+r.primary.model.name+':'+r.primary.achievedHead+':'+disc+':'+qty;
       const justChanged = key !== lineResultKey.get(line.id);
       summaryModel = `<bdi>${r.primary.model.name}</bdi>`;
       summaryExtra = `<bdi>${fmt(r.primary.model.hp,2)} HP · L=${r.primary.model.len ? r.primary.model.len+' mm' : '—'}</bdi>`;
-      stripHTML = `
-        <div class="result-strip${justChanged ? ' pop-in' : ''}">
-          <span class="rmodel"><bdi>${r.primary.model.name}</bdi></span>
-          <span class="rmeta"><bdi>${fmt(r.primary.achievedHead)} m</bdi></span>
-        </div>
-        <div class="line-stats">
+      pumpStatsHTML = `
+        <div class="pump-stats${justChanged ? ' pop-in' : ''}">
+          <div><div class="stat-label">${t('selectedPump')}</div><div class="stat-value"><bdi>${r.primary.model.name}</bdi></div></div>
           <div><div class="stat-label">${t('motor')}</div><div class="stat-value"><bdi>${fmt(r.primary.model.kw,2)} kW</bdi></div></div>
           <div><div class="stat-label">${t('length')}</div><div class="stat-value"><bdi>${r.primary.model.len ? r.primary.model.len+' mm' : '—'}</bdi></div></div>
-        </div>
+          <div><div class="stat-label">HM</div><div class="stat-value"><bdi>${fmt(r.primary.achievedHead)} m</bdi></div></div>
+        </div>`;
+      priceHTML = `
         ${price != null ? `<div class="result-strip price-strip">
           <span class="rmeta">${t('list')} <bdi>${fmtPrice(price)}</bdi>${disc>0?' · '+t('percentOff',{pct: bidi(disc)}):''}</span>
-          <span class="rmodel net-price"><bdi>${fmtPrice(netPrice)}</bdi></span>
+          <span class="rmodel net-price"><span class="strip-label">${t('unitPrice')}</span> <bdi>${fmtPrice(netPrice)}</bdi>${qty>1?` · <span class="strip-label">${t('lineTotal')}</span> <bdi>${fmtPrice(lineTotal)}</bdi>`:''}</span>
         </div>` : ''}
-        ${r.alt && r.alt.model ? `<div class="result-strip" style="margin-top:6px;opacity:.75"><span class="rmeta">${t('altShort')} <bdi>${prettyTag(r.altTag)}</bdi></span><span class="rmeta"><bdi>${r.alt.model.name}${r.alt.model.price!=null?' · '+fmtPrice(r.alt.model.price):''}</bdi></span></div>` : ''}
+        ${r.alt && r.alt.model ? `<div class="result-strip alt-row"><span class="rmeta">${t('altShort')} <bdi>${r.alt.model.name}</bdi></span><span class="rmodel">${r.alt.model.price!=null?'<bdi>'+fmtPrice(r.alt.model.price)+'</bdi>':''}</span></div>` : ''}
       `;
     }
   }
   lineResultKey.set(line.id, key);
 
-  return { summaryModel, summaryMeta, summaryExtra, stripHTML };
+  return { summaryModel, summaryMeta, summaryExtra, pumpStatsHTML, priceHTML };
 }
 
 function renderLineCard(line, idx){
   const isOpen = openLineId === line.id;
-  const { summaryModel, summaryMeta, summaryExtra, stripHTML } = lineOutputs(line);
+  const { summaryModel, summaryMeta, summaryExtra, pumpStatsHTML, priceHTML } = lineOutputs(line);
 
   const materialOpts = MATERIALS.map(m=>`<option value="${m}" ${line.material===m?'selected':''}>${materialLabel(m)}</option>`).join('');
   const sizeOpts = SIZES.map(([v])=>`<option value="${v}" ${line.sizeClass===v?'selected':''}>${sizeLabel(v)}</option>`).join('');
@@ -574,21 +645,23 @@ function renderLineCard(line, idx){
         <div><label>${t('bore')}</label><select class="line-select" data-field="sizeClass">${sizeOpts}</select></div>
         <div><label>${t('freq')}</label><select class="line-select" data-field="frequency">${freqOpts}</select></div>
       </div>
-      <div class="field row2">
+      <div class="field row3">
         <div><label>${t('flowQUnit')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="Q" value="${qToDisplay(line.Q)}"><button type="button" class="unit unit-toggle" onclick="toggleFlowUnit()" title="${otherFlowUnitLabel()}"><bdi>${flowUnitLabel()}</bdi></button></div></div>
         <div><label>${t('headHUnit')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="H" value="${hToDisplay(line.H)}"><button type="button" class="unit unit-toggle" onclick="toggleHeadUnit()" title="${headUnit==='ft'?'m':'ft'}"><bdi>${headUnitLabel()}</bdi></button></div></div>
+        <div><label>${t('safety')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="safety" value="${line.safety||0}"><span class="unit">%</span></div></div>
       </div>
+      <div class="pump-stats-slot">${pumpStatsHTML}</div>
       <div class="field row2">
-        <div>
-          <label>${t('safety')}</label>
-          <div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="safety" value="${line.safety||0}"><span class="unit">%</span></div>
-        </div>
         <div>
           <label>${t('discountRate')}</label>
           <div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="discount" value="${line.discount||0}"><span class="unit">%</span></div>
         </div>
+        <div>
+          <label>${t('unitNo')}</label>
+          <div class="numfield"><input type="number" inputmode="numeric" min="1" step="1" class="line-input" data-field="unitNo" value="${line.unitNo||1}"></div>
+        </div>
       </div>
-      <div class="strip-slot">${stripHTML}</div>
+      <div class="strip-slot">${priceHTML}</div>
       <div class="field" style="display:flex; gap:8px; margin-top:14px;">
         <button class="btn btn-ghost btn-sm" onclick="duplicateLine('${line.id}')">${t('duplicate')}</button>
         <button class="btn btn-danger-ghost btn-sm" onclick="deleteLine('${line.id}')">${t('del')}</button>
@@ -687,7 +760,7 @@ function wireTenderEvents(){
       const field = e.target.dataset.field;
       line[field] = (field === 'Q') ? qFromDisplay(e.target.value) : (field === 'H') ? hFromDisplay(e.target.value) : e.target.value;
       saveTenderLines();
-      // Update only the summary, result strip, and the page-level total.
+      // Update only the summary, computed strips, and the page-level total.
       // Rebuilding the card (or any other input) would destroy whichever
       // field is being typed into and reset its caret to 0.
       const out = lineOutputs(line);
@@ -703,8 +776,10 @@ function wireTenderEvents(){
       } else if (m3){
         m3.remove();
       }
+      const statsSlot = card.querySelector('.pump-stats-slot');
+      if (statsSlot) statsSlot.innerHTML = out.pumpStatsHTML;
       const slot = card.querySelector('.strip-slot');
-      if (slot) slot.innerHTML = out.stripHTML;
+      if (slot) slot.innerHTML = out.priceHTML;
       const totalSlot = document.getElementById('tenderTotalSlot');
       if (totalSlot) totalSlot.innerHTML = renderTenderTotalHTML();
     });

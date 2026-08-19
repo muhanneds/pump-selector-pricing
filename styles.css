@@ -322,19 +322,29 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 .result-strip .rmeta{ font-family: var(--font-mono); font-size:12px; color: var(--ink-soft); }
 .oor{ color: var(--danger) !important; }
 
-/* Motor + Pump Length, together as one glanceable row when a line is open —
-   the two numbers a buyer asks about first, alongside model, head and price. */
-.line-stats{
-  display:grid; grid-template-columns: 1fr 1fr; gap:10px;
+/* Selected pump, motor, length and achieved head together as one glanceable
+   strip once a line is open and matched — the numbers a buyer asks about
+   first, all in one place instead of split across a result line + a grid. */
+.pump-stats{
+  display:grid; grid-template-columns: repeat(4,1fr); gap:8px;
   background: var(--surface-2); border-radius: var(--radius-md);
   padding: 10px 12px; margin-top: 8px;
 }
-.line-stats .stat-label{ font-size:10px; color: var(--ink-faint); text-transform:uppercase; letter-spacing:.5px; font-weight:700; }
-.line-stats .stat-value{ font-family: var(--font-mono); font-size:15px; font-weight:700; color: var(--ink); margin-top:3px; }
+.pump-stats > div{ min-width:0; }
+.pump-stats .stat-label{ font-size:9.5px; color: var(--ink-faint); text-transform:uppercase; letter-spacing:.3px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pump-stats .stat-value{ font-family: var(--font-mono); font-size:13px; font-weight:700; color: var(--ink); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* ---------- Pricing ---------- */
 .result-strip.price-strip{ background: #FFFBEE; border:1px solid var(--amber-deep); }
 .result-strip.price-strip .net-price{ color: var(--amber-deep); font-size:14.5px; }
+/* Small muted label riding inside the bold price text — same trick as the
+   "List Price"/percent-off text on the left, just on the right side too. */
+.result-strip .strip-label{ font-family: var(--font-ui); font-weight:600; font-size:11px; color: var(--ink-soft); }
+/* Alt-series suggestion, de-emphasised below the price — model shown
+   directly (no series tag), since the tag is already implied by the primary
+   result above it. Model sits with the "Alt" label on the left; its price
+   stays right-aligned, same as the price row above it. */
+.result-strip.alt-row{ opacity:.75; margin-top:6px; }
 .card.price-total{
   padding:14px 16px; margin-bottom:14px;
   display:flex; align-items:center; justify-content:space-between; gap:12px;
@@ -346,6 +356,37 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 [dir="rtl"] .price-total-label{ text-transform:none; letter-spacing:0; }
 .price-total-value{
   font-family: var(--font-mono); font-size:19px; font-weight:800; color: var(--amber-deep);
+}
+.card.price-total .btn{ flex:none; }
+
+/* ---------- Tender summary sheet ---------- */
+.summary-overlay{
+  position:fixed; inset:0; z-index:60; background:rgba(20,33,58,.55);
+  display:flex; justify-content:center;
+  padding: 20px 14px calc(20px + env(safe-area-inset-bottom));
+  opacity:0; pointer-events:none; transition:opacity .18s ease;
+  overflow-y:auto;
+}
+.summary-overlay.open{ opacity:1; pointer-events:auto; }
+.summary-sheet{
+  background:var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-2);
+  max-width:640px; width:100%; padding:20px; margin-top:24px; height:fit-content;
+}
+.summary-sheet-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.summary-sheet-head h2{ font-size:16px; margin:0; color:var(--navy); font-weight:800; }
+.summary-table-wrap{ overflow-x:auto; }
+.summary-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+.summary-table th{ text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+.summary-table td{ padding:8px; border-bottom:1px solid var(--line); font-family:var(--font-mono); white-space:nowrap; }
+.summary-empty{ text-align:center; color:var(--ink-faint); font-family:var(--font-ui); padding:20px; white-space:normal; }
+.summary-grand{ display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:2px solid var(--line); font-weight:800; }
+.summary-grand-value{ font-family:var(--font-mono); font-size:18px; color: var(--amber-deep); }
+[dir="rtl"] .summary-table th{ text-align:right; }
+
+@media print{
+  .topbar, .tabbar, #toast{ display:none; }
+  .summary-overlay{ position:static; background:none; padding:0; opacity:1; }
+  .summary-sheet{ box-shadow:none; border:none; margin-top:0; max-width:none; }
 }
 
 .empty{
@@ -558,7 +599,7 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 bdi{ unicode-bidi: isolate; }
 [dir="rtl"] .plate .model,
 [dir="rtl"] .plate-grid .stat-value,
-[dir="rtl"] .line-stats .stat-value,
+[dir="rtl"] .pump-stats .stat-value,
 [dir="rtl"] .tender-count,
 [dir="rtl"] .result-strip .rmodel,
 [dir="rtl"] .result-strip .rmeta,
@@ -568,6 +609,7 @@ bdi{ unicode-bidi: isolate; }
 [dir="rtl"] .line-card-head .summary .m2,
 [dir="rtl"] .line-card-head .summary .m3,
 [dir="rtl"] .price-total-value,
+[dir="rtl"] .summary-grand-value,
 [dir="rtl"] .numfield input{
   direction: ltr;
   text-align: right;
