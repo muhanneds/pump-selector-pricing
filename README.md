@@ -158,6 +158,11 @@ showing a blank.
 
 ## Changelog
 
+- **`interpolateHead` permanently tolerant of a padded trailing null** in the
+  flow array — same fix as pump-selector, same file (`engine.js`, identical
+  between both apps). `data.js` untouched; the fresh pricing export's
+  catalogue matches what's already deployed exactly.
+
 - **Motor kW corrected across ~120 models**, same update as pump-selector,
   ported from the pricing export so prices stayed attached. Same recurring
   null-flow defect in MSP625/MSP8125 caught and fixed again — see

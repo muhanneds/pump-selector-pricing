@@ -96,7 +96,12 @@ function altSeries(material, frequency, primaryTag) {
 
 // Linear interpolation matching the workbook's INDEX/MATCH logic exactly.
 function interpolateHead(flows, heads, Q) {
-  const n = flows.length;
+  // Defensive: not every series has the same number of flow points, and a short
+  // series can arrive padded with trailing nulls. Comparing Q against null silently
+  // yields no match for every duty point, so clip to the real length first.
+  let n = flows.length;
+  while (n > 0 && (flows[n - 1] === null || flows[n - 1] === undefined)) n--;
+  if (n === 0) return null;
   if (Q < flows[0] || Q > flows[n - 1]) return null;
   if (Q === flows[n - 1]) return heads[n - 1];
   let i = 0;
