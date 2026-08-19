@@ -602,6 +602,26 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 /* Logical property so the unit sits after the number in both directions. */
 .numfield .unit{ margin-left:0; margin-inline-start:8px; }
 
+/* pump-stats: the LTR column widths were tuned so a mono-space model code
+   fits on one line in a single row of 4. Arabic labels ("المضخة المختارة"
+   etc.) are long enough that no width split of one row makes all four sit
+   comfortably — so instead of chasing fractions, Arabic gets a 2x2 grid:
+   every cell gets a real half-width, nothing is squeezed to fit a row. */
+[dir="rtl"] .pump-stats{
+  grid-template-columns: 1fr 1fr;
+  row-gap: 12px;
+}
+
+/* price-strip (the amber/yellow list+net price row): "List Price · X% off"
+   opposite "Unit Price · Line total" is already dense in English; the Arabic
+   equivalents run noticeably longer, so the two sides get their own line
+   instead of being squeezed into one row. */
+[dir="rtl"] .result-strip.price-strip{
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
 /* Model codes, numbers and units are always read left-to-right, even inside
    Arabic text. <bdi> isolates them; this keeps their internal order intact so
    "MSP610-07" never renders as "07-MSP610". */
