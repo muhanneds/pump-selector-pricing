@@ -569,24 +569,23 @@ function renderLineCard(line, idx){
     </div>
     <div class="line-card-body-wrap">
     <div class="line-card-body">
-      <div class="field">
-        <label>${t('material')}</label>
-        <select class="line-select" data-field="material">${materialOpts}</select>
-      </div>
       <div class="field row3">
+        <div><label>${t('material')}</label><select class="line-select" data-field="material">${materialOpts}</select></div>
         <div><label>${t('bore')}</label><select class="line-select" data-field="sizeClass">${sizeOpts}</select></div>
         <div><label>${t('freq')}</label><select class="line-select" data-field="frequency">${freqOpts}</select></div>
-        <div>
-          <label>${t('discountRate')}</label>
-          <div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="discount" value="${line.discount||0}"><span class="unit">%</span></div>
-        </div>
       </div>
-      <div class="field row3">
+      <div class="field row2">
         <div><label>${t('flowQUnit')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="Q" value="${qToDisplay(line.Q)}"><button type="button" class="unit unit-toggle" onclick="toggleFlowUnit()" title="${otherFlowUnitLabel()}"><bdi>${flowUnitLabel()}</bdi></button></div></div>
         <div><label>${t('headHUnit')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="H" value="${hToDisplay(line.H)}"><button type="button" class="unit unit-toggle" onclick="toggleHeadUnit()" title="${headUnit==='ft'?'m':'ft'}"><bdi>${headUnitLabel()}</bdi></button></div></div>
+      </div>
+      <div class="field row2">
         <div>
           <label>${t('safety')}</label>
           <div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="safety" value="${line.safety||0}"><span class="unit">%</span></div>
+        </div>
+        <div>
+          <label>${t('discountRate')}</label>
+          <div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="discount" value="${line.discount||0}"><span class="unit">%</span></div>
         </div>
       </div>
       <div class="strip-slot">${stripHTML}</div>
