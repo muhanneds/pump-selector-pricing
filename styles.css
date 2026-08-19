@@ -177,6 +177,10 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 
 .row2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
 .row3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+/* Flow Q/Head H/Safety margin rows — Flow Q's numfield carries a unit-toggle
+   button alongside the digits, so it needs a bit more room than an even
+   third to fit 3-digit values without the button crowding the number. */
+.row3.duty-row{ grid-template-columns: 1.18fr 1fr 1fr; }
 
 /* Native <select>s had no styling at all before this — they shrank to their
    own text and scattered unevenly across row3. Give them the same box

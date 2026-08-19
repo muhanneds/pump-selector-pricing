@@ -479,7 +479,7 @@ function renderSelectorHTML(){
         <label>${t('frequency')}</label>
         <div class="segmented freq" id="freqSeg">${freqButtons}</div>
       </div>
-      <div class="field row3">
+      <div class="field row3 duty-row">
         <div>
           <label>${t('flowQ')}</label>
           <div class="numfield"><input type="number" inputmode="decimal" id="inputQ" value="${qToDisplay(selState.Q)}"><button type="button" class="unit unit-toggle" onclick="toggleFlowUnit()" title="${otherFlowUnitLabel()}"><bdi>${flowUnitLabel()}</bdi></button></div>
@@ -645,7 +645,7 @@ function renderLineCard(line, idx){
         <div><label>${t('bore')}</label><select class="line-select" data-field="sizeClass">${sizeOpts}</select></div>
         <div><label>${t('freq')}</label><select class="line-select" data-field="frequency">${freqOpts}</select></div>
       </div>
-      <div class="field row3">
+      <div class="field row3 duty-row">
         <div><label>${t('flowQUnit')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="Q" value="${qToDisplay(line.Q)}"><button type="button" class="unit unit-toggle" onclick="toggleFlowUnit()" title="${otherFlowUnitLabel()}"><bdi>${flowUnitLabel()}</bdi></button></div></div>
         <div><label>${t('headHUnit')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="H" value="${hToDisplay(line.H)}"><button type="button" class="unit unit-toggle" onclick="toggleHeadUnit()" title="${headUnit==='ft'?'m':'ft'}"><bdi>${headUnitLabel()}</bdi></button></div></div>
         <div><label>${t('safety')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="safety" value="${line.safety||0}"><span class="unit">%</span></div></div>
