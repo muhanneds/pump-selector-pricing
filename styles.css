@@ -330,10 +330,12 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
    strip once a line is open and matched — the numbers a buyer asks about
    first, all in one place instead of split across a result line + a grid. */
 /* Uneven columns: the model code (Selected Pump) is the longest value here
-   and the one most likely to truncate, while HM is always a short number —
-   give the model room to breathe instead of splitting the strip evenly. */
+   and the one most likely to truncate, while HM is always a short number.
+   HM's column is sized to its own content (auto) rather than a fixed share,
+   so it never sits with leftover space around it — whatever it doesn't use
+   goes to the model column instead. */
 .pump-stats{
-  display:grid; grid-template-columns: 1.8fr 1.1fr 1fr 0.75fr; gap:8px;
+  display:grid; grid-template-columns: 2fr 1.1fr 1fr auto; gap:8px;
   background: var(--surface-2); border-radius: var(--radius-md);
   padding: 10px 12px; margin-top: 8px;
 }
