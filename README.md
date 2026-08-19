@@ -158,6 +158,14 @@ showing a blank.
 
 ## Changelog
 
+- **Tender line form regrouped, per your reference screenshot**: Material
+  alone on its own full-width row (fixes its select truncating longer option
+  text like "Stainless Steel" in a 1/3-width column); Bore/Freq/Discount
+  rate become one 3-column row; Flow Q/Head H/Safety margin become another.
+  Fixed a real `.numfield` vs `.line-select` height mismatch (43px matched
+  exactly on mobile, reset to auto on desktop). Confirmed price/discount
+  math and the tender total are unaffected — purely a layout change.
+
 - **Series pill top-right; Motor Power/Motor stat swap; Tolerans** — same
   three changes as pump-selector: series pill shares the "Selected model"
   row, HP moves first and is relabeled "Motor Power" (now shows its own

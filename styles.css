@@ -156,6 +156,9 @@ main{ flex:1; padding: 16px 14px calc(96px + env(safe-area-inset-bottom)); }
   border: 1.5px solid var(--amber-deep);
   border-radius: var(--radius-md);
   padding: 8px 12px;
+  /* Matches .line-select's explicit height, so a row mixing a select with a
+     numfield (e.g. Bore / Freq / Discount rate) lines up exactly. */
+  height:43px; box-sizing:border-box;
 }
 .numfield input{
   border:none; background:transparent; outline:none;
@@ -438,7 +441,9 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
   .field{ margin-bottom:16px; }
   .field > label{ font-size:11.5px; }
   .segmented button{ padding:11px 6px; font-size:13px; }
-  .numfield{ padding:11px 14px; }
+  /* The 43px mobile height (added so a numfield lines up with a select in the
+     same row) is too tight for desktop's larger font — let it size naturally. */
+  .numfield{ padding:11px 14px; height:auto; }
   .numfield input{ font-size:22px; }
 
   /* ---------- Result: read as a spec sheet, not a phone card ---------- */
