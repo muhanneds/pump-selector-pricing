@@ -339,9 +339,11 @@ function renderResultsHTML(ready, r){
   } else {
     plateHTML = `
       <div class="plate${animCls}">
-        <div class="plate-label">${t('selectedModel')}</div>
+        <div class="plate-head-row">
+          <div class="plate-label">${t('selectedModel')}</div>
+          <span class="series-tag">${t('seriesSuffix', {tag: bidi(prettyTag(r.primaryTag))})}</span>
+        </div>
         <div class="model"><bdi>${r.primary.model.name}</bdi></div>
-        <span class="series-tag">${t('seriesSuffix', {tag: bidi(prettyTag(r.primaryTag))})}</span>
         <div class="status ok">✓ ${t('stagesResult', {
             n: bidi(r.primary.stages ?? '—'),
             stage: tn('stage', r.primary.stages ?? 0),
@@ -349,8 +351,8 @@ function renderResultsHTML(ready, r){
             q: bidi(fmt(r.Q,2))
         })}</div>
         <div class="plate-grid">
+          <div><div class="stat-label">${t('motorPower')}</div><div class="stat-value"><bdi>${fmt(r.primary.model.hp,2)} HP</bdi></div></div>
           <div><div class="stat-label">${t('motor')}</div><div class="stat-value"><bdi>${fmt(r.primary.model.kw,2)} kW</bdi></div></div>
-          <div><div class="stat-label">${t('hp')}</div><div class="stat-value"><bdi>${fmt(r.primary.model.hp,2)}</bdi></div></div>
           <div><div class="stat-label">${t('length')}</div><div class="stat-value"><bdi>${r.primary.model.len ? r.primary.model.len+' mm' : '—'}</bdi></div></div>
         </div>
       </div>`;

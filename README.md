@@ -158,6 +158,12 @@ showing a blank.
 
 ## Changelog
 
+- **Series pill top-right; Motor Power/Motor stat swap; Tolerans** — same
+  three changes as pump-selector: series pill shares the "Selected model"
+  row, HP moves first and is relabeled "Motor Power" (now shows its own
+  unit), and Turkish "Safety margin" is now "Tolerans". See pump-selector's
+  README for the detail. Confirmed price/discount rows are unaffected.
+
 - **Added subtle motion throughout** — same as pump-selector (result reveal,
   tab-switch slide, animated line open/close/add/delete, press feedback);
   see its README for the detail. One addition specific to this app: a
