@@ -630,8 +630,6 @@ bdi{ unicode-bidi: isolate; }
 [dir="rtl"] .plate-grid .stat-value,
 [dir="rtl"] .pump-stats .stat-value,
 [dir="rtl"] .tender-count,
-[dir="rtl"] .result-strip .rmodel,
-[dir="rtl"] .result-strip .rmeta,
 [dir="rtl"] .altbox .alt-model,
 [dir="rtl"] .altbox .alt-head,
 [dir="rtl"] .line-card-head .summary .m1,
