@@ -158,6 +158,12 @@ showing a blank.
 
 ## Changelog
 
+- **Motor kW corrected across ~120 models**, same update as pump-selector,
+  ported from the pricing export so prices stayed attached. Same recurring
+  null-flow defect in MSP625/MSP8125 caught and fixed again — see
+  pump-selector's README for the detail. Confirmed prices for MSP8125 and
+  the previously-priceless MCP 643-32 are still correct after the fix.
+
 - **HP/Length moved to the top-right corner** next to the model name (same
   as pump-selector). **Added Safety margin**, placed to the left of Discount
   rate in its own row — both now feed the line's own result and the
