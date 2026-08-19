@@ -1,4 +1,4 @@
-const CACHE_NAME = 'msp-pump-pricing-v19';
+const CACHE_NAME = 'msp-pump-pricing-v20';
 const ASSETS = [
   './',
   './index.html',
@@ -14,9 +14,16 @@ const ASSETS = [
   './icons/msp-logo-white.png'
 ];
 
+// cache.addAll() does a plain fetch per asset, which can silently reuse the
+// browser's own HTTP cache instead of hitting the network -- so a fresh
+// CACHE_NAME could still precache a stale asset if the browser had already
+// fetched it earlier in the session. {cache:'reload'} forces each precache
+// fetch past the HTTP cache, so install always pulls the true current files.
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(cache =>
+      Promise.all(ASSETS.map(url => fetch(url, { cache: 'reload' }).then(resp => cache.put(url, resp))))
+    ).then(() => self.skipWaiting())
   );
 });
 
