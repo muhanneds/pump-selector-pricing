@@ -158,6 +158,14 @@ showing a blank.
 
 ## Changelog
 
+- **Added subtle motion throughout** — same as pump-selector (result reveal,
+  tab-switch slide, animated line open/close/add/delete, press feedback);
+  see its README for the detail. One addition specific to this app: a
+  line's reveal key includes its discount rate, so changing the discount
+  alone (with Q/H unchanged) still triggers the reveal, since the net price
+  shown genuinely changed. Verified the tender total and discount math are
+  unaffected by any of this — purely visual.
+
 - **`interpolateHead` permanently tolerant of a padded trailing null** in the
   flow array — same fix as pump-selector, same file (`engine.js`, identical
   between both apps). `data.js` untouched; the fresh pricing export's

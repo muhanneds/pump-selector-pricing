@@ -176,6 +176,10 @@ function saveSelectorState(){
 // ---------------------------------------------------------------------------
 let tenderLines = loadTenderLines();
 let openLineId = null;
+// Last-shown result identity per line, so the reveal animation only plays
+// when a line's result actually changes — same idea as lastPlateKey below,
+// just keyed per line since Tender can have several results on screen.
+const lineResultKey = new Map();
 function loadTenderLines(){
   try{
     const raw = localStorage.getItem(STORE_KEY_TENDER);
@@ -223,10 +227,22 @@ function renderTenderTotalHTML(){
 // ---------------------------------------------------------------------------
 let currentTab = 'selector';
 function switchTab(tab){
+  const changingTab = tab !== currentTab;
   currentTab = tab;
   document.getElementById('tabSelector').classList.toggle('active', tab==='selector');
   document.getElementById('tabTender').classList.toggle('active', tab==='tender');
   render();
+  // render() replaces #main's CONTENT, but #main itself is the same element
+  // across every switch — so a previous direction's class is still sitting
+  // there unless explicitly cleared, and simply re-adding the same class
+  // name (e.g. two tender->selector switches in a row) would not replay the
+  // animation without a forced reflow in between.
+  if (changingTab){
+    const main = document.getElementById('main');
+    main.classList.remove('tab-enter-l', 'tab-enter-r');
+    void main.offsetWidth;
+    main.classList.add(tab === 'tender' ? 'tab-enter-r' : 'tab-enter-l');
+  }
 }
 
 // Re-label everything that lives outside <main> (top bar, tab bar, picker).
@@ -276,9 +292,22 @@ function selectorCompute(){
   return { ready, r };
 }
 
+// Identifies the plate's current content, so a change in the RESULT (not
+// every keystroke) is what triggers the reveal animation below — retyping a
+// digit that leaves the same model selected shouldn't replay it.
+let lastPlateKey;
+function plateKey(ready, r){
+  if (!ready) return 'empty';
+  if (r.primaryTag === 'OUT OF RANGE') return 'oor';
+  if (!r.primary.model) return 'nomatch:'+r.primaryTag;
+  return 'ok:'+r.primary.model.name+':'+r.primary.achievedHead;
+}
+
 // Only the computed output. Kept separate from the form so typing can refresh
 // the results without rebuilding the inputs.
 function renderResultsHTML(ready, r){
+  const animCls = (plateKey(ready, r) !== lastPlateKey) ? ' pop-in' : '';
+  lastPlateKey = plateKey(ready, r);
   let plateHTML;
   if (!ready){
     const missing = [];
@@ -288,28 +317,28 @@ function renderResultsHTML(ready, r){
     if (!(Number(selState.Q) > 0)) missing.push(t('fFlow'));
     if (!(Number(selState.H) > 0)) missing.push(t('fHead'));
     plateHTML = `
-      <div class="plate empty">
+      <div class="plate empty${animCls}">
         <div class="plate-label">${t('selectedModel')}</div>
         <div class="model">—</div>
         <div class="status">${t('chooseToSee', {fields: missing.join(currentLang==='ar' ? '، ' : ', ')})}</div>
       </div>`;
   } else if (r.primaryTag === 'OUT OF RANGE'){
     plateHTML = `
-      <div class="plate">
+      <div class="plate${animCls}">
         <div class="plate-label">${t('selectedSeries')}</div>
         <div class="model">${t('outOfRange')}</div>
         <div class="status warn">⚠ ${t('noSeriesCovers')}</div>
       </div>`;
   } else if (!r.primary.model){
     plateHTML = `
-      <div class="plate">
+      <div class="plate${animCls}">
         <div class="plate-label">${t('selectedSeries')} · ${bidi(prettyTag(r.primaryTag))}</div>
         <div class="model">${t('noMatch')}</div>
         <div class="status warn">⚠ ${t('noModelReaches', {tag: bidi(prettyTag(r.primaryTag)), head: bidi(fmt(r.designHead)), q: bidi(fmt(r.Q,2))})}</div>
       </div>`;
   } else {
     plateHTML = `
-      <div class="plate">
+      <div class="plate${animCls}">
         <div class="plate-label">${t('selectedModel')}</div>
         <div class="model"><bdi>${r.primary.model.name}</bdi></div>
         <span class="series-tag">${t('seriesSuffix', {tag: bidi(prettyTag(r.primaryTag))})}</span>
@@ -475,21 +504,26 @@ function lineOutputs(line){
 
   let summaryModel = '—', summaryMeta = t('enterQH'), summaryExtra = '';
   let stripHTML = '';
+  let key = 'empty';
   if (Q > 0 && H > 0){
     summaryMeta = enteredDutyText(Q, H);
     if (r.primaryTag === 'OUT OF RANGE'){
+      key = 'oor';
       summaryModel = t('outOfRange');
       stripHTML = `<div class="result-strip"><span class="rmodel oor">${t('oorCaps')}</span></div>`;
     } else if (!r.primary.model){
+      key = 'nomatch:'+r.primaryTag;
       summaryModel = t('noMatch');
       stripHTML = `<div class="result-strip"><span class="rmodel oor">${t('noMatchIn', {tag: bidi(prettyTag(r.primaryTag))})}</span></div>`;
     } else {
       const price = r.primary.model.price;
       const netPrice = price != null ? price * (100-disc)/100 : null;
+      key = 'ok:'+r.primary.model.name+':'+r.primary.achievedHead+':'+disc;
+      const justChanged = key !== lineResultKey.get(line.id);
       summaryModel = `<bdi>${r.primary.model.name}</bdi>`;
       summaryExtra = `<bdi>${fmt(r.primary.model.hp,2)} HP · L=${r.primary.model.len ? r.primary.model.len+' mm' : '—'}</bdi>`;
       stripHTML = `
-        <div class="result-strip">
+        <div class="result-strip${justChanged ? ' pop-in' : ''}">
           <span class="rmodel"><bdi>${r.primary.model.name}</bdi></span>
           <span class="rmeta"><bdi>${fmt(r.primary.achievedHead)} m</bdi></span>
         </div>
@@ -505,6 +539,7 @@ function lineOutputs(line){
       `;
     }
   }
+  lineResultKey.set(line.id, key);
 
   return { summaryModel, summaryMeta, summaryExtra, stripHTML };
 }
@@ -530,7 +565,7 @@ function renderLineCard(line, idx){
       </div>
       <svg class="chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
-    ${isOpen ? `
+    <div class="line-card-body-wrap">
     <div class="line-card-body">
       <div class="field row3">
         <div><label>${t('material')}</label><select class="line-select" data-field="material">${materialOpts}</select></div>
@@ -556,13 +591,28 @@ function renderLineCard(line, idx){
         <button class="btn btn-ghost btn-sm" onclick="duplicateLine('${line.id}')">${t('duplicate')}</button>
         <button class="btn btn-danger-ghost btn-sm" onclick="deleteLine('${line.id}')">${t('del')}</button>
       </div>
-    </div>` : ''}
+    </div>
+    </div>
   </div>`;
 }
 
+// Toggles the .open class on the existing card in place, instead of calling
+// render() (which destroys and recreates every card's DOM). A freshly
+// recreated element has no "before" state, so the max-height transition on
+// .line-card-body-wrap can't animate unless the same element persists across
+// the toggle. Nothing about the line's data changes here, so skipping the
+// full re-render is safe — the card's contents are already correct from
+// whatever last rendered them.
 function toggleLine(id){
-  openLineId = (openLineId === id) ? null : id;
-  render();
+  const prevOpenId = openLineId;
+  const wasOpen = prevOpenId === id;
+  openLineId = wasOpen ? null : id;
+  if (prevOpenId && prevOpenId !== id){
+    const prevCard = document.querySelector(`.line-card[data-id="${prevOpenId}"]`);
+    if (prevCard) prevCard.classList.remove('open');
+  }
+  const card = document.querySelector(`.line-card[data-id="${id}"]`);
+  if (card) card.classList.toggle('open', !wasOpen);
 }
 function addLine(){
   const l = newLine();
@@ -570,8 +620,12 @@ function addLine(){
   openLineId = l.id;
   saveTenderLines();
   render();
+  const card = document.querySelector(`.line-card[data-id="${l.id}"]`);
+  if (card){
+    card.classList.add('line-enter');
+    card.addEventListener('animationend', ()=> card.classList.remove('line-enter'), { once:true });
+  }
   setTimeout(()=>{
-    const card = document.querySelector(`.line-card[data-id="${l.id}"]`);
     if (card) card.scrollIntoView({behavior:'smooth', block:'center'});
   }, 30);
 }
@@ -585,12 +639,29 @@ function duplicateLine(id){
   toast(t('lineDuplicated'));
   render();
 }
+// Animates the card out, then mutates state and re-renders — rather than the
+// other way round, which would delete the DOM node before it had a chance to
+// animate. transitionend drives the normal case; the timeout is a safety net
+// in case it never fires (e.g. the element is torn down some other way).
 function deleteLine(id){
-  tenderLines = tenderLines.filter(l=>l.id!==id);
-  if (openLineId === id) openLineId = null;
-  saveTenderLines();
-  toast(t('lineRemoved'));
-  render();
+  const card = document.querySelector(`.line-card[data-id="${id}"]`);
+  const commit = () => {
+    tenderLines = tenderLines.filter(l=>l.id!==id);
+    if (openLineId === id) openLineId = null;
+    lineResultKey.delete(id);
+    saveTenderLines();
+    toast(t('lineRemoved'));
+    render();
+  };
+  if (card){
+    let done = false;
+    const finish = () => { if (done) return; done = true; commit(); };
+    card.classList.add('removing');
+    card.addEventListener('transitionend', finish, { once:true });
+    setTimeout(finish, 300);
+  } else {
+    commit();
+  }
 }
 
 function wireTenderEvents(){

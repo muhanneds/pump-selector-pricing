@@ -271,10 +271,17 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
   background: var(--surface); border-radius: var(--radius-lg);
   border:1px solid var(--line); box-shadow: var(--shadow-1);
   margin-bottom:12px; overflow:hidden;
+  /* Delete animates out via this — max-height starts far above any realistic
+     card height, so the transition is inert until .removing pulls it to 0. */
+  max-height:900px;
+  transition: max-height .22s ease, opacity .22s ease, margin-bottom .22s ease;
 }
+.line-card.removing{ max-height:0; opacity:0; margin-bottom:0; pointer-events:none; }
 .line-card-head{
   display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer;
+  transition: background .15s;
 }
+.line-card-head:active{ background: var(--surface-2); }
 .line-num{
   width:26px; height:26px; border-radius:8px; background: var(--surface-2);
   color: var(--ink-soft); font-family: var(--font-mono); font-weight:700; font-size:12px;
@@ -289,6 +296,15 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 .line-card-head .summary .m3{ flex:none; font-family: var(--font-mono); font-size:11px; color: var(--ink-faint); white-space:nowrap; }
 .line-card-head .chev{ color: var(--ink-faint); transition: transform .15s; flex-shrink:0; }
 .line-card.open .chev{ transform: rotate(180deg); }
+/* Always rendered (not conditional on open), so this transition has a real
+   "from" state to animate — a full re-render destroys and recreates the DOM,
+   which can't transition. Generous max-height cap; see the comment on
+   .line-card above for why the same pattern is used there for delete. */
+.line-card-body-wrap{
+  max-height:0; overflow:hidden; visibility:hidden;
+  transition: max-height .22s ease, visibility .22s;
+}
+.line-card.open > .line-card-body-wrap{ max-height:900px; visibility:visible; }
 .line-card-body{ padding: 0 14px 14px; border-top:1px solid var(--line); }
 .line-card-body .field{ margin-top:12px; }
 
@@ -463,6 +479,53 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 }
 
 /* Keyboard users on desktop need a visible focus ring; mouse users do not. */
+/* =========================================================================
+   Motion
+   Subtle and fast throughout (150-250ms) — confirms a change rather than
+   decorating the app. Respects prefers-reduced-motion at the bottom.
+   ========================================================================= */
+
+/* Result reveal: the .pop-in class is added by JS only when the result
+   actually changed, so retyping the same duty point doesn't replay this on
+   every keystroke — see plateKey()/lineResultKey in app.js. */
+@keyframes popIn{
+  from{ opacity:0; transform: translateY(4px) scale(.985); }
+  to  { opacity:1; transform: translateY(0) scale(1); }
+}
+.pop-in{ animation: popIn .22s ease-out; }
+
+/* Tab switch: #main slides in from the side of whichever tab was chosen —
+   applied once, right after render() replaces its content with fresh DOM. */
+@keyframes tabEnterR{ from{opacity:0; transform:translateX(10px);} to{opacity:1; transform:translateX(0);} }
+@keyframes tabEnterL{ from{opacity:0; transform:translateX(-10px);} to{opacity:1; transform:translateX(0);} }
+#main.tab-enter-r{ animation: tabEnterR .2s ease-out; }
+#main.tab-enter-l{ animation: tabEnterL .2s ease-out; }
+
+/* Tender line add/remove — add plays on the one new card only (targeted by
+   JS, not a blind CSS auto-play, which would replay on every unrelated
+   card whenever any of them re-renders). Remove uses .line-card.removing
+   from the block above, driven by a JS-orchestrated delay before the
+   actual delete (see deleteLine in app.js). */
+@keyframes lineEnter{ from{opacity:0; transform:translateY(-6px) scale(.98);} to{opacity:1; transform:translateY(0) scale(1);} }
+.line-card.line-enter{ animation: lineEnter .22s ease-out; }
+
+/* Small interactive press feedback — universal (touch + mouse), unlike the
+   hover block below which is gated to pointer devices only. */
+.segmented button, .btn, button.unit.unit-toggle, .tabbar button{
+  transition: transform .12s ease, background .15s, color .15s, border-color .15s;
+}
+.segmented button:active, .btn:active, button.unit.unit-toggle:active, .tabbar button:active{
+  transform: scale(.96);
+}
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
 :focus-visible{ outline: 2.5px solid var(--teal); outline-offset: 2px; border-radius: 4px; }
 
 /* Pointer-based devices get a hover affordance; touch screens must not, or the
