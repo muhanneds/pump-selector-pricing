@@ -344,7 +344,12 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 .pump-stats .stat-value{ font-family: var(--font-mono); font-size:13px; font-weight:700; color: var(--ink); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* ---------- Pricing ---------- */
-.result-strip.price-strip{ background: #FFFBEE; border:1px solid var(--amber-deep); }
+/* List price/discount and Unit price/line total get their own line each —
+   reads better than squeezing both into one row, in every language. */
+.result-strip.price-strip{
+  background: #FFFBEE; border:1px solid var(--amber-deep);
+  flex-direction: column; align-items: stretch; gap: 6px;
+}
 .result-strip.price-strip .net-price{ color: var(--amber-deep); font-size:14.5px; }
 /* Small muted label riding inside the bold price text — same trick as the
    "List Price"/percent-off text on the left, just on the right side too. */
@@ -610,16 +615,6 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 [dir="rtl"] .pump-stats{
   grid-template-columns: 1fr 1fr;
   row-gap: 12px;
-}
-
-/* price-strip (the amber/yellow list+net price row): "List Price · X% off"
-   opposite "Unit Price · Line total" is already dense in English; the Arabic
-   equivalents run noticeably longer, so the two sides get their own line
-   instead of being squeezed into one row. */
-[dir="rtl"] .result-strip.price-strip{
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
 }
 
 /* Model codes, numbers and units are always read left-to-right, even inside
