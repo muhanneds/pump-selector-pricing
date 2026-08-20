@@ -159,7 +159,7 @@ main{ flex:1; padding: 16px 14px calc(96px + env(safe-area-inset-bottom)); }
 }
 .numfield input{
   border:none; background:transparent; outline:none;
-  font-family: var(--font-mono); font-size: 19px; font-weight:600;
+  font-family: var(--font-mono); font-size: 17px; font-weight:600;
   color: var(--ink); width:100%; -moz-appearance: textfield;
 }
 .numfield input::-webkit-outer-spin-button,
@@ -494,7 +494,7 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
   .field > label{ font-size:11.5px; }
   .segmented button{ padding:11px 6px; font-size:13px; }
   .numfield{ padding:11px 14px; }
-  .numfield input{ font-size:22px; }
+  .numfield input{ font-size:20px; }
 
   /* ---------- Result: read as a spec sheet, not a phone card ---------- */
   .plate{ padding: 28px 30px 26px; border-radius:20px; }
