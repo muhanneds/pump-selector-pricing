@@ -335,13 +335,10 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
    so it never sits with leftover space around it — whatever it doesn't use
    goes to the model column instead. */
 .pump-stats{
-  display:grid; grid-template-columns: 1.7fr 0.75fr 1.5fr auto; gap:8px;
+  display:grid; grid-template-columns: 1.5fr 1.3fr 1.2fr auto; gap:8px;
   background: var(--surface-2); border-radius: var(--radius-md);
   padding: 10px 12px; margin-top: 8px;
 }
-/* Nudges Pump Length's own content right within its column, without
-   touching Motor's width/position or Pump Length's column width itself. */
-.pump-stats > div:nth-child(3){ padding-inline-start:6px; }
 .pump-stats > div{ min-width:0; }
 .pump-stats .stat-label{ font-size:9.5px; color: var(--ink-faint); text-transform:uppercase; letter-spacing:.3px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .pump-stats .stat-value{ font-family: var(--font-mono); font-size:13px; font-weight:700; color: var(--ink); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
