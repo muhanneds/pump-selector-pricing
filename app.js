@@ -33,6 +33,29 @@ function toast(msg){
 }
 
 // ---------------------------------------------------------------------------
+// Social links — shown at the bottom of both screens. Real outbound links
+// (target=_blank, rel=noopener) to the company's own official channels.
+// ---------------------------------------------------------------------------
+const SOCIAL_LINKS = [
+  { name:'Facebook', url:'https://www.facebook.com/msp.pumps',
+    icon:'<path d="M22 12a10 10 0 1 0-11.5 9.87v-6.98H7.9V12h2.6V9.8c0-2.57 1.53-4 3.87-4 1.12 0 2.3.2 2.3.2v2.5h-1.3c-1.28 0-1.68.8-1.68 1.62V12h2.86l-.46 2.89h-2.4v6.98A10 10 0 0 0 22 12z"/>' },
+  { name:'Instagram', url:'https://www.instagram.com/msp.pumps/',
+    icon:'<rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.3" cy="6.7" r="1.15" fill="currentColor"/>' },
+  { name:'YouTube', url:'https://www.youtube.com/@msp_pumps',
+    icon:'<rect x="2.3" y="5.5" width="19.4" height="13" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 9.2v5.6l5-2.8-5-2.8z" fill="currentColor"/>' },
+  { name:'X', url:'https://x.com/msp_pumps',
+    icon:'<path d="M4.5 4.5l15 15M19.5 4.5l-15 15" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>' },
+  { name:'TikTok', url:'https://www.tiktok.com/@msp.pumps',
+    icon:'<path d="M15.5 3v10.9a3.4 3.4 0 1 1-2.5-3.28V8a5.4 5.4 0 1 0 4.8 5.37V9.3a7 7 0 0 0 3.9 1.18V8a5 5 0 0 1-3.9-2.42A5.1 5.1 0 0 1 17.4 3h-1.9z"/>' }
+];
+function renderSocialFooterHTML(){
+  const links = SOCIAL_LINKS.map(s =>
+    `<a href="${s.url}" target="_blank" rel="noopener noreferrer" aria-label="${s.name}" title="${s.name}"><svg viewBox="0 0 24 24" width="20" height="20">${s.icon}</svg></a>`
+  ).join('');
+  return `<div class="social-footer"><span class="social-label">${t('followUs')}</span><div class="social-links">${links}</div></div>`;
+}
+
+// ---------------------------------------------------------------------------
 // Flow unit (m³/h vs L/s) — a display/input preference only. Every stored Q
 // (selState.Q, line.Q) and every call into the engine stays in m³/h always;
 // this layer just converts at the edges so the field can be typed into and
@@ -398,6 +421,7 @@ function renderResultsHTML(ready, r){
         <div class="plate-label">${t('selectedSeries')}</div>
         <div class="model">${t('outOfRange')}</div>
         <div class="status warn">⚠ ${t('noSeriesCovers')}</div>
+        <div class="status-note">${t('contactSales')}</div>
       </div>`;
   } else if (!r.primary.model){
     plateHTML = `
@@ -497,6 +521,7 @@ function renderSelectorHTML(){
     </div>
 
     <div id="resultArea">${renderResultsHTML(ready, r)}</div>
+    ${renderSocialFooterHTML()}
   `;
 }
 
@@ -548,6 +573,7 @@ function renderTenderHTML(){
         <p>${t('noLines')}</p>
       </div>
       <button class="btn btn-primary btn-block" onclick="addLine()">${t('addLine')}</button>
+      ${renderSocialFooterHTML()}
     `;
   }
 
@@ -558,6 +584,7 @@ function renderTenderHTML(){
     ${lines}
     <button class="btn btn-primary btn-block" onclick="addLine()">${t('addLine')}</button>
     <div style="height:4px"></div>
+    ${renderSocialFooterHTML()}
   `;
 }
 
@@ -582,7 +609,7 @@ function lineOutputs(line){
     if (r.primaryTag === 'OUT OF RANGE'){
       key = 'oor';
       summaryModel = t('outOfRange');
-      pumpStatsHTML = `<div class="result-strip"><span class="rmodel oor">${t('oorCaps')}</span></div>`;
+      pumpStatsHTML = `<div class="result-strip"><span class="rmodel oor">${t('oorCaps')}</span></div><div class="status-note">${t('contactSales')}</div>`;
     } else if (!r.primary.model){
       key = 'nomatch:'+r.primaryTag;
       summaryModel = t('noMatch');

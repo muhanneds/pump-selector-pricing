@@ -241,6 +241,10 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 }
 .plate .status.ok{ color:#7FE0C7; }
 .plate .status.warn{ color:#FFC978; }
+/* Sits under the OOR/no-match warning — a practical next step, not another
+   warning, so it's dialled back rather than repeating the amber/red tone. */
+.status-note{ margin-top:6px; font-size:12px; font-weight:500; color: var(--ink-soft); }
+.plate .status-note{ color:#C3D0E4; }
 /* Nothing selected yet: same plate, dialled back so it reads as a placeholder. */
 .plate.empty{ background: linear-gradient(155deg, #46587A 0%, #35455F 100%); }
 .plate.empty .model{ color: rgba(255,255,255,.42); }
@@ -421,6 +425,25 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 /* ---------- misc ---------- */
 .hint{ font-size:12px; color: var(--ink-faint); margin-top:8px; line-height:1.5; }
 .divider{ height:1px; background: var(--line); margin:14px 0; }
+
+/* ---------- Social footer ---------- */
+.social-footer{
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  margin-top:22px; padding-top:18px; border-top:1px solid var(--line);
+}
+.social-label{
+  font-size:11px; font-weight:700; color: var(--ink-faint);
+  text-transform:uppercase; letter-spacing:.6px;
+}
+.social-links{ display:flex; align-items:center; gap:16px; }
+.social-links a{
+  color: var(--ink-soft); display:flex; padding:4px;
+  transition: color .15s, transform .12s;
+}
+.social-links a:active{ transform: scale(.92); }
+@media (hover: hover) and (pointer: fine){
+  .social-links a:hover{ color: var(--navy); }
+}
 
 @media (min-width: 480px){
   .plate .model{ font-size:28px; }
@@ -653,6 +676,7 @@ bdi{ unicode-bidi: isolate; }
 [dir="rtl"] .plate-grid .stat-label,
 [dir="rtl"] .pump-stats .stat-label,
 [dir="rtl"] .altbox .alt-label,
+[dir="rtl"] .social-label,
 [dir="rtl"] .summary-table th{
   text-transform: none;
   letter-spacing: 0;

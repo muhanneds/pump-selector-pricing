@@ -47,7 +47,9 @@ const STRINGS = {
     tenderTotalLabel:'Tender total (after discount)',
     selectedPump:'Selected Pump', unitNo:'Unit No', unitPrice:'Unit Price',
     viewSummary:'View Summary', summaryTitle:'Tender Summary', close:'Close',
-    qty:'Qty', net:'Net', lineTotal:'Line total'
+    qty:'Qty', net:'Net', lineTotal:'Line total',
+    contactSales:'Contact our sales team for a custom solution.',
+    followUs:'Follow us'
   },
   tr: {
     appTitle:'MSP Fiyat', tabSelector:'Seçici', tabTender:'Teklif',
@@ -78,7 +80,9 @@ const STRINGS = {
     tenderTotalLabel:'Teklif toplamı (indirim sonrası)',
     selectedPump:'Seçilen Pompa', unitNo:'Adet', unitPrice:'Birim Fiyatı',
     viewSummary:'Özeti Görüntüle', summaryTitle:'Teklif Özeti', close:'Kapat',
-    qty:'Adet', net:'Net', lineTotal:'Satır toplamı'
+    qty:'Adet', net:'Net', lineTotal:'Satır toplamı',
+    contactSales:'Özel bir çözüm için satış ekibimizle iletişime geçin.',
+    followUs:'Bizi takip edin'
   },
   ar: {
     appTitle:'أسعار MSP', tabSelector:'المحدد', tabTender:'العطاء',
@@ -109,7 +113,9 @@ const STRINGS = {
     tenderTotalLabel:'إجمالي العطاء (بعد الخصم)',
     selectedPump:'المضخة المختارة', unitNo:'عدد الوحدات', unitPrice:'سعر الوحدة',
     viewSummary:'عرض الملخص', summaryTitle:'ملخص العطاء', close:'إغلاق',
-    qty:'الكمية', net:'الصافي', lineTotal:'إجمالي البند'
+    qty:'الكمية', net:'الصافي', lineTotal:'إجمالي البند',
+    contactSales:'تواصل مع فريق المبيعات للحصول على حل مخصص.',
+    followUs:'تابعنا'
   },
   es: {
     appTitle:'Precios MSP', tabSelector:'Selector', tabTender:'Licitación',
@@ -140,7 +146,9 @@ const STRINGS = {
     tenderTotalLabel:'Total de licitación (con descuento)',
     selectedPump:'Bomba seleccionada', unitNo:'Cantidad', unitPrice:'Precio unitario',
     viewSummary:'Ver resumen', summaryTitle:'Resumen de licitación', close:'Cerrar',
-    qty:'Cant.', net:'Neto', lineTotal:'Total de línea'
+    qty:'Cant.', net:'Neto', lineTotal:'Total de línea',
+    contactSales:'Contacte a nuestro equipo de ventas para una solución personalizada.',
+    followUs:'Síguenos'
   }
 };
 
