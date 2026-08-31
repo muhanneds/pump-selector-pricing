@@ -235,9 +235,13 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
   background: rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.22);
   padding:3px 9px; border-radius:999px;
 }
+/* NOT flex: this holds arbitrary sentences built from plain text interleaved
+   with several <bdi>-wrapped numbers (e.g. noModelReaches). Flex turned each
+   text fragment between the <bdi> tags into its own anonymous flex item, so
+   the sentence wrapped fragment-by-fragment instead of flowing as one
+   paragraph -- worst on longer translations (TR/ES/AR) with more fragments. */
 .plate .status{
-  margin-top:12px; font-size:13px; font-weight:600;
-  display:flex; align-items:center; gap:7px;
+  margin-top:12px; font-size:13px; font-weight:600; line-height:1.4;
 }
 .plate .status.ok{ color:#7FE0C7; }
 .plate .status.warn{ color:#FFC978; }
