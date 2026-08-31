@@ -48,7 +48,7 @@ const STRINGS = {
     selectedPump:'Selected Pump', unitNo:'Unit No', unitPrice:'Unit Price',
     viewSummary:'View Summary', summaryTitle:'Tender Summary', close:'Close',
     qty:'Qty', net:'Net', lineTotal:'Line total',
-    contactSales:'Contact our sales team for a custom solution.',
+    contactSales:'Contact our sales team for these specifications.',
     followUs:'Follow us', contactUs:'Contact us'
   },
   tr: {
@@ -81,7 +81,7 @@ const STRINGS = {
     selectedPump:'Seçilen Pompa', unitNo:'Adet', unitPrice:'Birim Fiyatı',
     viewSummary:'Özeti Görüntüle', summaryTitle:'Teklif Özeti', close:'Kapat',
     qty:'Adet', net:'Net', lineTotal:'Satır toplamı',
-    contactSales:'Özel bir çözüm için satış ekibimizle iletişime geçin.',
+    contactSales:'Bu özellikler için satış ekibimizle iletişime geçin.',
     followUs:'Bizi takip edin', contactUs:'Bize ulaşın'
   },
   ar: {
@@ -114,7 +114,7 @@ const STRINGS = {
     selectedPump:'المضخة المختارة', unitNo:'عدد الوحدات', unitPrice:'سعر الوحدة',
     viewSummary:'عرض الملخص', summaryTitle:'ملخص العطاء', close:'إغلاق',
     qty:'الكمية', net:'الصافي', lineTotal:'إجمالي البند',
-    contactSales:'تواصل مع فريق المبيعات للحصول على حل مخصص.',
+    contactSales:'تواصل مع فريق المبيعات لهذه المواصفات.',
     followUs:'تابعنا', contactUs:'تواصل معنا'
   },
   es: {
@@ -147,7 +147,7 @@ const STRINGS = {
     selectedPump:'Bomba seleccionada', unitNo:'Cantidad', unitPrice:'Precio unitario',
     viewSummary:'Ver resumen', summaryTitle:'Resumen de licitación', close:'Cerrar',
     qty:'Cant.', net:'Neto', lineTotal:'Total de línea',
-    contactSales:'Contacte a nuestro equipo de ventas para una solución personalizada.',
+    contactSales:'Contacte a nuestro equipo de ventas para estas especificaciones.',
     followUs:'Síguenos', contactUs:'Contáctenos'
   }
 };
