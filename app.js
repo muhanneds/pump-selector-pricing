@@ -48,11 +48,30 @@ const SOCIAL_LINKS = [
   { name:'TikTok', url:'https://www.tiktok.com/@msp.pumps',
     icon:'<path d="M15.5 3v10.9a3.4 3.4 0 1 1-2.5-3.28V8a5.4 5.4 0 1 0 4.8 5.37V9.3a7 7 0 0 0 3.9 1.18V8a5 5 0 0 1-3.9-2.42A5.1 5.1 0 0 1 17.4 3h-1.9z"/>' }
 ];
-function renderSocialFooterHTML(){
-  const links = SOCIAL_LINKS.map(s =>
+// Direct-contact channels — website, email, and two WhatsApp lines (domestic
+// Türkiye vs. export). wa.me links take digits only, no "+" or spaces.
+const CONTACT_LINKS = [
+  { name:'Website', url:'https://www.mutlusu.com.tr',
+    icon:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><ellipse cx="12" cy="12" rx="4" ry="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3 12h18" stroke="currentColor" stroke-width="1.7"/>' },
+  { name:'Email', url:'mailto:mutlu@mutlusu.com.tr',
+    icon:'<rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4 6.5l8 6.5 8-6.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' },
+  { name:'WhatsApp (Türkiye)', url:'https://wa.me/905384712654',
+    icon:'<path d="M12 2a10 10 0 0 0-8.7 15l-1.2 4.4 4.5-1.2A10 10 0 1 0 12 2z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8.5 8.3c.3-.6.6-.6.9-.6h.6c.2 0 .5 0 .7.5s.8 1.9.8 2 0 .3-.1.4c-.2.2-.3.3-.5.5s-.3.3-.1.6a7 7 0 0 0 3 2.8c.3.1.5.1.7-.1s.7-.8.9-1 .4-.2.7-.1l1.8.9c.2.1.4.2.4.4s0 1.1-.5 1.6-1.6 1-2.4 1c-2.5 0-6-2.2-6.9-3.1S7.5 12 7.5 10.6c0-1.4.7-1.9.9-2.2z" fill="currentColor"/>' },
+  { name:'WhatsApp (Export)', url:'https://wa.me/905413920050',
+    icon:'<path d="M12 2a10 10 0 0 0-8.7 15l-1.2 4.4 4.5-1.2A10 10 0 1 0 12 2z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8.5 8.3c.3-.6.6-.6.9-.6h.6c.2 0 .5 0 .7.5s.8 1.9.8 2 0 .3-.1.4c-.2.2-.3.3-.5.5s-.3.3-.1.6a7 7 0 0 0 3 2.8c.3.1.5.1.7-.1s.7-.8.9-1 .4-.2.7-.1l1.8.9c.2.1.4.2.4.4s0 1.1-.5 1.6-1.6 1-2.4 1c-2.5 0-6-2.2-6.9-3.1S7.5 12 7.5 10.6c0-1.4.7-1.9.9-2.2z" fill="currentColor"/>' }
+];
+function renderIconLinksHTML(list){
+  return list.map(s =>
     `<a href="${s.url}" target="_blank" rel="noopener noreferrer" aria-label="${s.name}" title="${s.name}"><svg viewBox="0 0 24 24" width="20" height="20">${s.icon}</svg></a>`
   ).join('');
-  return `<div class="social-footer"><span class="social-label">${t('followUs')}</span><div class="social-links">${links}</div></div>`;
+}
+function renderSocialFooterHTML(){
+  return `<div class="social-footer">
+    <span class="social-label">${t('followUs')}</span>
+    <div class="social-links">${renderIconLinksHTML(SOCIAL_LINKS)}</div>
+    <span class="social-label">${t('contactUs')}</span>
+    <div class="social-links">${renderIconLinksHTML(CONTACT_LINKS)}</div>
+  </div>`;
 }
 
 // ---------------------------------------------------------------------------

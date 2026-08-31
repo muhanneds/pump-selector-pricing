@@ -49,7 +49,7 @@ const STRINGS = {
     viewSummary:'View Summary', summaryTitle:'Tender Summary', close:'Close',
     qty:'Qty', net:'Net', lineTotal:'Line total',
     contactSales:'Contact our sales team for a custom solution.',
-    followUs:'Follow us'
+    followUs:'Follow us', contactUs:'Contact us'
   },
   tr: {
     appTitle:'MSP Fiyat', tabSelector:'Seçici', tabTender:'Teklif',
@@ -82,7 +82,7 @@ const STRINGS = {
     viewSummary:'Özeti Görüntüle', summaryTitle:'Teklif Özeti', close:'Kapat',
     qty:'Adet', net:'Net', lineTotal:'Satır toplamı',
     contactSales:'Özel bir çözüm için satış ekibimizle iletişime geçin.',
-    followUs:'Bizi takip edin'
+    followUs:'Bizi takip edin', contactUs:'Bize ulaşın'
   },
   ar: {
     appTitle:'أسعار MSP', tabSelector:'المحدد', tabTender:'العطاء',
@@ -115,7 +115,7 @@ const STRINGS = {
     viewSummary:'عرض الملخص', summaryTitle:'ملخص العطاء', close:'إغلاق',
     qty:'الكمية', net:'الصافي', lineTotal:'إجمالي البند',
     contactSales:'تواصل مع فريق المبيعات للحصول على حل مخصص.',
-    followUs:'تابعنا'
+    followUs:'تابعنا', contactUs:'تواصل معنا'
   },
   es: {
     appTitle:'Precios MSP', tabSelector:'Selector', tabTender:'Licitación',
@@ -148,7 +148,7 @@ const STRINGS = {
     viewSummary:'Ver resumen', summaryTitle:'Resumen de licitación', close:'Cerrar',
     qty:'Cant.', net:'Neto', lineTotal:'Total de línea',
     contactSales:'Contacte a nuestro equipo de ventas para una solución personalizada.',
-    followUs:'Síguenos'
+    followUs:'Síguenos', contactUs:'Contáctenos'
   }
 };
 
