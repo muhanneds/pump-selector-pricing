@@ -429,6 +429,7 @@ function renderResultsHTML(ready, r){
         <div class="plate-label">${t('selectedSeries')} · ${bidi(prettyTag(r.primaryTag))}</div>
         <div class="model">${t('noMatch')}</div>
         <div class="status warn">⚠ ${t('noModelReaches', {tag: bidi(prettyTag(r.primaryTag)), head: bidi(fmt(r.designHead)), q: bidi(fmt(r.Q,2))})}</div>
+        <div class="status-note">${t('contactSales')}</div>
       </div>`;
   } else {
     plateHTML = `
@@ -613,7 +614,7 @@ function lineOutputs(line){
     } else if (!r.primary.model){
       key = 'nomatch:'+r.primaryTag;
       summaryModel = t('noMatch');
-      pumpStatsHTML = `<div class="result-strip"><span class="rmodel oor">${t('noMatchIn', {tag: bidi(prettyTag(r.primaryTag))})}</span></div>`;
+      pumpStatsHTML = `<div class="result-strip"><span class="rmodel oor">${t('noMatchIn', {tag: bidi(prettyTag(r.primaryTag))})}</span></div><div class="status-note">${t('contactSales')}</div>`;
     } else {
       const price = r.primary.model.price;
       const netPrice = price != null ? price * (100-disc)/100 : null;
