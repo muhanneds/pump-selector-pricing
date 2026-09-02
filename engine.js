@@ -59,7 +59,10 @@ const SIXTY_HZ_ALT = {MP617:'MP625',MP625:'MP617',MP630:'MP625',MP646:'MP630',MP
 
 function selectSeries(material, sizeClass, frequency, Q) {
   if (frequency === '60Hz') {
-    if (material !== 'Stainless Steel' || sizeClass !== '6plus') return 'OUT OF RANGE';
+    // Only 6"+ exists at 60Hz -- but "Any" bore should still match it rather
+    // than being rejected just for not literally being the string '6plus'.
+    // Only 4" (which genuinely doesn't exist at 60Hz) should be excluded.
+    if (material !== 'Stainless Steel' || sizeClass === '4only') return 'OUT OF RANGE';
     if (!(Q > 0)) return 'OUT OF RANGE';
     for (const [cutoff, tag] of SIXTY_HZ_LADDER) if (Q <= cutoff) return tag;
     return 'OUT OF RANGE';
