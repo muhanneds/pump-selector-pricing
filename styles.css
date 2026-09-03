@@ -182,6 +182,22 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
    third to fit 3-digit values without the button crowding the number. */
 .row3.duty-row{ grid-template-columns: 1.18fr 1fr 1fr; }
 
+/* Narrow phones (iPhone SE/11, budget Android — commonly 360-390px, tighter
+   than the 375-414px this was tuned on): three numfields with unit-toggle
+   pills in one row leaves each one only ~90px, cramping the digits against
+   the pill. Safety margin (no pill, just %) drops to its own full-width row
+   so Flow Q and Head H each keep a real, comfortable width. */
+@media (max-width: 420px){
+  .row2, .row3{ gap:7px; }
+  .row3.duty-row{
+    grid-template-columns: 1fr 1fr;
+  }
+  .row3.duty-row > :nth-child(3){ grid-column: 1 / -1; }
+  .numfield{ padding:7px 10px; }
+  .numfield input{ font-size:16px; }
+  button.unit.unit-toggle{ padding:2px 7px; font-size:11px; }
+}
+
 /* Native <select>s had no styling at all before this — they shrank to their
    own text and scattered unevenly across row3. Give them the same box
    language as .numfield so Material/Bore/Freq line up as a real row. */
