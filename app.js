@@ -67,10 +67,14 @@ function renderIconLinksHTML(list){
 }
 function renderSocialFooterHTML(){
   return `<div class="social-footer">
-    <span class="social-label">${t('followUs')}</span>
-    <div class="social-links">${renderIconLinksHTML(SOCIAL_LINKS)}</div>
-    <span class="social-label">${t('contactUs')}</span>
-    <div class="social-links">${renderIconLinksHTML(CONTACT_LINKS)}</div>
+    <div class="social-group">
+      <span class="social-label">${t('followUs')}</span>
+      <div class="social-links">${renderIconLinksHTML(SOCIAL_LINKS)}</div>
+    </div>
+    <div class="social-group">
+      <span class="social-label">${t('contactUs')}</span>
+      <div class="social-links">${renderIconLinksHTML(CONTACT_LINKS)}</div>
+    </div>
   </div>`;
 }
 

@@ -452,9 +452,10 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 
 /* ---------- Social footer ---------- */
 .social-footer{
-  display:flex; flex-direction:column; align-items:center; gap:10px;
+  display:flex; flex-direction:column; align-items:center; gap:18px;
   margin-top:22px; padding-top:18px; border-top:1px solid var(--line);
 }
+.social-group{ display:flex; flex-direction:column; align-items:center; gap:10px; }
 .social-label{
   font-size:11px; font-weight:700; color: var(--ink-faint);
   text-transform:uppercase; letter-spacing:.6px;
@@ -584,6 +585,12 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
   .btn{ font-size:14px; padding:11px 18px; }
 
   #toast{ bottom: 32px; }
+
+  /* Social footer: side by side with a divider, instead of stacked --
+     there's width to spare on desktop. */
+  .social-footer{ flex-direction:row; justify-content:center; gap:0; }
+  .social-group{ padding:0 28px; }
+  .social-group + .social-group{ border-inline-start:1px solid var(--line); }
 }
 
 /* Keyboard users on desktop need a visible focus ring; mouse users do not. */
