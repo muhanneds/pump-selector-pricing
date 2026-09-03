@@ -182,20 +182,24 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
    third to fit 3-digit values without the button crowding the number. */
 .row3.duty-row{ grid-template-columns: 1.18fr 1fr 1fr; }
 
-/* Narrow phones (iPhone SE/11, budget Android — commonly 360-390px, tighter
-   than the 375-414px this was tuned on): three numfields with unit-toggle
-   pills in one row leaves each one only ~90px, cramping the digits against
-   the pill. Safety margin (no pill, just %) drops to its own full-width row
-   so Flow Q and Head H each keep a real, comfortable width. */
-@media (max-width: 420px){
-  .row2, .row3{ gap:7px; }
-  .row3.duty-row{
+/* Narrow, budget-tier Android phones (commonly 360-393px CSS width): three
+   numfields with unit-toggle pills in one row leaves each ~90px, cramping
+   the digits against the pill. Safety margin (no pill, just %) drops to its
+   own full-width row so Flow Q and Head H each keep a real width.
+   Gated on html.is-android (set in index.html from the user agent) AND a
+   tight width -- a large Android flagship (e.g. S25 Ultra, ~412px) and any
+   iPhone at a similar width (e.g. iPhone 11, 414px) both stay on the
+   original 3-column layout, since width alone can't tell them apart from a
+   genuinely cramped budget phone. */
+@media (max-width: 400px){
+  html.is-android .row2, html.is-android .row3{ gap:7px; }
+  html.is-android .row3.duty-row{
     grid-template-columns: 1fr 1fr;
   }
-  .row3.duty-row > :nth-child(3){ grid-column: 1 / -1; }
-  .numfield{ padding:7px 10px; }
-  .numfield input{ font-size:16px; }
-  button.unit.unit-toggle{ padding:2px 7px; font-size:11px; }
+  html.is-android .row3.duty-row > :nth-child(3){ grid-column: 1 / -1; }
+  html.is-android .numfield{ padding:7px 10px; }
+  html.is-android .numfield input{ font-size:16px; }
+  html.is-android button.unit.unit-toggle{ padding:2px 7px; font-size:11px; }
 }
 
 /* Native <select>s had no styling at all before this — they shrank to their

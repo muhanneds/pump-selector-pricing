@@ -6,6 +6,14 @@
 <title>MSP Pump Selector</title>
 <meta name="description" content="Submersible pump selection & tender tool">
 <meta name="theme-color" content="#1B3A6B">
+<script>
+// iPhone 11/S25 Ultra-class devices share nearly the same CSS width (~412-414px),
+// so a width-only media query can't tell a genuinely cramped budget Android phone
+// apart from a large flagship at that width. Tag Android explicitly so the
+// narrow-phone CSS (see styles.css) can require BOTH a tight width AND Android,
+// leaving every iPhone -- regardless of width -- on the original layout.
+if (/Android/i.test(navigator.userAgent)) document.documentElement.classList.add('is-android');
+</script>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="app-icons/icon-192.png">
 <link rel="apple-touch-icon" href="app-icons/icon-192.png">
