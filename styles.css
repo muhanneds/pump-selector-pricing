@@ -150,11 +150,17 @@ main{ flex:1; padding: 16px 14px calc(96px + env(safe-area-inset-bottom)); }
    real phone or a different font can still wrap one column further than
    the others and drift out of sync. Self-adjusting instead: CSS Grid
    already stretches .discount-row's own children to the row's tallest
-   item, so making each of THOSE columns a flex column and pinning its
-   numfield to the bottom (margin-top:auto) keeps every numfield flush
-   with the row's actual tallest label, however many lines it wraps to. */
+   item, so each of THOSE columns is a flex column with its label set to
+   flex:1 -- the label's box grows to fill whatever space its column has
+   left over (none for a 2-3 line label, extra for a one-line one), and
+   align-items:center centers that label's own text within its grown box.
+   Since every column ends up the same total height (equalised by the
+   grid) and every numfield is the same fixed height, the label's grown
+   box is automatically the same size across all three columns too --
+   which is what keeps every numfield flush at the same position, without
+   guessing a line count anywhere. */
 .discount-row > div{ display:flex; flex-direction:column; }
-.discount-row > div > .numfield{ margin-top:auto; }
+.discount-row > div > label{ flex:1; display:flex; align-items:center; }
 .segmented{
   display:flex; background: var(--surface-2); border-radius: var(--radius-md);
   padding: 3px; gap:3px; border:1px solid var(--line);
