@@ -49,7 +49,8 @@ const STRINGS = {
     viewSummary:'View Summary', summaryTitle:'Tender Summary', close:'Close',
     qty:'Qty', net:'Net', lineTotal:'Line total',
     contactSales:'Contact our sales team for these specifications.',
-    followUs:'Follow us', contactUs:'Contact us'
+    followUs:'Follow us', contactUs:'Contact us',
+    motorModel:'Motor Model', motorPlaceholder:'e.g. MSM 6/25', pump:'Pump'
   },
   tr: {
     appTitle:'MSP Fiyat', tabSelector:'Seçici', tabTender:'Teklif',
@@ -82,7 +83,8 @@ const STRINGS = {
     viewSummary:'Özeti Görüntüle', summaryTitle:'Teklif Özeti', close:'Kapat',
     qty:'Adet', net:'Net', lineTotal:'Satır toplamı',
     contactSales:'Bu özellikler için satış ekibimizle iletişime geçin.',
-    followUs:'Bizi takip edin', contactUs:'Bize ulaşın'
+    followUs:'Bizi takip edin', contactUs:'Bize ulaşın',
+    motorModel:'Motor Modeli', motorPlaceholder:'örn. MSM 6/25', pump:'Pompa'
   },
   ar: {
     appTitle:'أسعار MSP', tabSelector:'المحدد', tabTender:'العطاء',
@@ -115,7 +117,8 @@ const STRINGS = {
     viewSummary:'عرض الملخص', summaryTitle:'ملخص العطاء', close:'إغلاق',
     qty:'الكمية', net:'الصافي', lineTotal:'إجمالي البند',
     contactSales:'تواصل مع فريق المبيعات لهذه المواصفات.',
-    followUs:'تابعنا', contactUs:'تواصل معنا'
+    followUs:'تابعنا', contactUs:'تواصل معنا',
+    motorModel:'موديل المحرك', motorPlaceholder:'مثال: MSM 6/25', pump:'المضخة'
   },
   es: {
     appTitle:'Precios MSP', tabSelector:'Selector', tabTender:'Licitación',
@@ -148,7 +151,8 @@ const STRINGS = {
     viewSummary:'Ver resumen', summaryTitle:'Resumen de licitación', close:'Cerrar',
     qty:'Cant.', net:'Neto', lineTotal:'Total de línea',
     contactSales:'Contacte a nuestro equipo de ventas para estas especificaciones.',
-    followUs:'Síguenos', contactUs:'Contáctenos'
+    followUs:'Síguenos', contactUs:'Contáctenos',
+    motorModel:'Modelo de motor', motorPlaceholder:'p. ej. MSM 6/25', pump:'Bomba'
   }
 };
 

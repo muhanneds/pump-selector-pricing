@@ -238,7 +238,16 @@ function saveTenderLines(){
 }
 function newLine(){
   return { id: Date.now()+Math.random().toString(16).slice(2), material:'Stainless Steel',
-           sizeClass:'6plus', frequency:'50Hz', Q:'', H:'', safety:0, tag:'', discount:0, unitNo:1 };
+           sizeClass:'6plus', frequency:'50Hz', Q:'', H:'', safety:0, tag:'', discount:0, unitNo:1, motorCode:'' };
+}
+
+// Looks up a motor by the code the user typed/selected, exact match against
+// MOTOR_DATA's keys (trimmed). Codes come from motor-data.js, extracted
+// verbatim from Desktop/prices.xlsx -- the numeric suffix is NOT a direct HP
+// value for 6in+ sizes, so it's never parsed, only used as an opaque key.
+function motorLookup(code){
+  const key = (code || '').trim();
+  return key && MOTOR_DATA[key] ? MOTOR_DATA[key] : null;
 }
 
 // Sum of every line's net price (list price less its own discount rate),
@@ -253,9 +262,11 @@ function tenderTotal(){
     const r = computeDuty(line.material, line.sizeClass, line.frequency, Q, H, safety);
     if (r.primary && r.primary.model && r.primary.model.price != null){
       hasAnyPrice = true;
+      const motor = motorLookup(line.motorCode);
+      const listPrice = r.primary.model.price + (motor ? motor.price : 0);
       const disc = Number(line.discount)||0;
       const qty = Number(line.unitNo)||1;
-      total += r.primary.model.price * (100-disc)/100 * qty;
+      total += listPrice * (100-disc)/100 * qty;
     }
   }
   return { total, hasAnyPrice };
@@ -287,9 +298,11 @@ function summaryRows(){
     if (!r.primary || !r.primary.model || r.primary.model.price == null) return;
     const qty = Number(line.unitNo)||1;
     const disc = Number(line.discount)||0;
-    const price = r.primary.model.price;
+    const motor = motorLookup(line.motorCode);
+    const price = r.primary.model.price + (motor ? motor.price : 0);
     const net = price * (100-disc)/100;
-    rows.push({ idx, model: r.primary.model.name, qty, price, disc, net, lineTotal: net*qty });
+    const model = r.primary.model.name + (motor ? ' + ' + line.motorCode.trim() : '');
+    rows.push({ idx, model, qty, price, disc, net, lineTotal: net*qty });
   });
   return rows;
 }
@@ -638,11 +651,14 @@ function lineOutputs(line){
       summaryModel = t('noMatch');
       pumpStatsHTML = `<div class="result-strip"><span class="rmodel oor">${t('noMatchIn', {tag: bidi(prettyTag(r.primaryTag))})}</span></div><div class="status-note">${t('contactSales')}</div>`;
     } else {
-      const price = r.primary.model.price;
+      const pumpPrice = r.primary.model.price;
+      const motor = motorLookup(line.motorCode);
+      const motorPrice = motor ? motor.price : null;
+      const price = pumpPrice != null ? pumpPrice + (motorPrice || 0) : null;
       const netPrice = price != null ? price * (100-disc)/100 : null;
       const qty = Number(line.unitNo)||1;
       const lineTotal = netPrice != null ? netPrice * qty : null;
-      key = 'ok:'+r.primary.model.name+':'+r.primary.achievedHead+':'+disc+':'+qty;
+      key = 'ok:'+r.primary.model.name+':'+r.primary.achievedHead+':'+disc+':'+qty+':'+(line.motorCode||'');
       const justChanged = key !== lineResultKey.get(line.id);
       summaryModel = `<bdi>${r.primary.model.name}</bdi>`;
       summaryExtra = `<bdi>${fmt(r.primary.model.hp,2)} HP · L=${r.primary.model.len ? r.primary.model.len+' mm' : '—'}</bdi>`;
@@ -655,7 +671,7 @@ function lineOutputs(line){
         </div>`;
       priceHTML = `
         ${price != null ? `<div class="result-strip price-strip">
-          <span class="rmeta">${t('list')} <bdi>${fmtPrice(price)}</bdi>${disc>0?' · '+t('percentOff',{pct: bidi(disc)}):''}</span>
+          <span class="rmeta">${t('list')} <bdi>${fmtPrice(price)}</bdi>${disc>0?' · '+t('percentOff',{pct: bidi(disc)}):''}${motor ? ` <span class="strip-label">(${t('pump')} <bdi>${fmtPrice(pumpPrice)}</bdi> + ${t('motor')} <bdi>${fmtPrice(motorPrice)}</bdi>)</span>` : ''}</span>
           <span class="rmodel net-price"><span class="strip-label">${t('unitPrice')}</span> <bdi>${fmtPrice(netPrice)}</bdi>${qty>1?` · <span class="strip-label">${t('lineTotal')}</span> <bdi>${fmtPrice(lineTotal)}</bdi>`:''}</span>
         </div>` : ''}
         ${r.alt && r.alt.model ? `<div class="result-strip alt-row"><span class="rmeta">${t('altShort')} <bdi>${r.alt.model.name}</bdi></span><span class="rmodel">${r.alt.model.price!=null?'<bdi>'+fmtPrice(r.alt.model.price)+'</bdi>':''}</span></div>` : ''}
@@ -701,6 +717,10 @@ function renderLineCard(line, idx){
         <div><label>${t('safety')}</label><div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="safety" value="${line.safety||0}"><span class="unit">%</span></div></div>
       </div>
       <div class="pump-stats-slot">${pumpStatsHTML}</div>
+      <div class="field">
+        <label>${t('motorModel')}</label>
+        <input type="text" list="motorCodeList" class="line-input motor-input" data-field="motorCode" value="${line.motorCode||''}" placeholder="${t('motorPlaceholder')}" autocomplete="off">
+      </div>
       <div class="field row2">
         <div>
           <label>${t('discountRate')}</label>
@@ -839,6 +859,11 @@ function wireTenderEvents(){
 // ---------------------------------------------------------------------------
 // init
 // ---------------------------------------------------------------------------
+// Shared <datalist>, referenced by every line's motor-code input (see
+// renderLineCard) -- one populated list, not per-line duplicates.
+document.getElementById('motorCodeList').innerHTML =
+  Object.keys(MOTOR_DATA).map(code => `<option value="${code}">`).join('');
+
 renderChrome();
 render();
 
