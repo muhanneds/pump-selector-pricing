@@ -132,10 +132,23 @@ main{ flex:1; padding: 16px 14px calc(96px + env(safe-area-inset-bottom)); }
 /* ---------- Segmented control ---------- */
 .field{ margin-bottom: 14px; }
 .field:last-child{ margin-bottom:0; }
-.field > label{
+/* .field > div > label covers row2/row3 groups (Material/Bore/Freq, Flow Q/
+   Head H/Safety, Discount/Unit No, ...), where each column's label sits one
+   level deeper (inside its own wrapper div) than a standalone .field's does.
+   Without it these labels silently fell back to the unstyled browser
+   default (16px, no uppercase, no bold) -- easy to miss in a screenshot,
+   but the real bug behind mismatched label heights across a row. */
+.field > label,
+.field > div > label{
   display:block; font-size: 12px; font-weight:700; color: var(--ink-soft);
   margin-bottom: 7px; text-transform: uppercase; letter-spacing:.5px;
 }
+/* Pump/Motor Discount Rate labels run long enough to wrap onto 2 lines in
+   several languages (EN/TR/ES; Arabic's translations happen to wrap the
+   same way too), while "Unit No"/"Adet" never wraps -- reserving fixed
+   height for every label in this row keeps all three numfields aligned to
+   the same baseline regardless of which ones wrap. */
+.discount-row > div > label{ min-height: 4em; line-height:1.3; }
 .segmented{
   display:flex; background: var(--surface-2); border-radius: var(--radius-md);
   padding: 3px; gap:3px; border:1px solid var(--line);
@@ -550,7 +563,7 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 
   .card h2{ font-size:13px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--line); }
   .field{ margin-bottom:16px; }
-  .field > label{ font-size:11.5px; }
+  .field > label, .field > div > label{ font-size:11.5px; }
   .segmented button{ padding:11px 6px; font-size:13px; }
   .numfield{ padding:11px 14px; }
   .numfield input{ font-size:20px; }
@@ -714,6 +727,7 @@ bdi{ unicode-bidi: isolate; }
    styling). */
 [dir="rtl"] .card h2,
 [dir="rtl"] .field > label,
+[dir="rtl"] .field > div > label,
 [dir="rtl"] .plate .plate-label,
 [dir="rtl"] .plate-grid .stat-label,
 [dir="rtl"] .pump-stats .stat-label,
@@ -725,5 +739,6 @@ bdi{ unicode-bidi: isolate; }
 }
 /* Slightly larger: Arabic glyphs carry more detail at the same pixel size. */
 [dir="rtl"] .field > label,
+[dir="rtl"] .field > div > label,
 [dir="rtl"] .plate .plate-label{ font-size:12.5px; }
 [dir="rtl"] .tabbar button{ font-size:12px; }
