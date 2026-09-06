@@ -51,7 +51,7 @@ const STRINGS = {
     contactSales:'Contact our sales team for these specifications.',
     followUs:'Follow us', contactUs:'Contact us',
     motorModel:'Motor Model', motorPlaceholder:'e.g. MSM 6/25', pump:'Pump',
-    motorDiscountRate:'Motor Discount Rate'
+    motorDiscountRate:'Motor Discount Rate', pumpDiscountRate:'Pump Discount Rate'
   },
   tr: {
     appTitle:'MSP Fiyat', tabSelector:'Seçici', tabTender:'Teklif',
@@ -86,7 +86,7 @@ const STRINGS = {
     contactSales:'Bu özellikler için satış ekibimizle iletişime geçin.',
     followUs:'Bizi takip edin', contactUs:'Bize ulaşın',
     motorModel:'Motor Modeli', motorPlaceholder:'örn. MSM 6/25', pump:'Pompa',
-    motorDiscountRate:'Motor İskontosu'
+    motorDiscountRate:'Motor İskontosu', pumpDiscountRate:'Pompa İskontosu'
   },
   ar: {
     appTitle:'أسعار MSP', tabSelector:'المحدد', tabTender:'العطاء',
@@ -121,7 +121,7 @@ const STRINGS = {
     contactSales:'تواصل مع فريق المبيعات لهذه المواصفات.',
     followUs:'تابعنا', contactUs:'تواصل معنا',
     motorModel:'موديل المحرك', motorPlaceholder:'مثال: MSM 6/25', pump:'المضخة',
-    motorDiscountRate:'نسبة خصم المحرك'
+    motorDiscountRate:'نسبة خصم المحرك', pumpDiscountRate:'نسبة خصم المضخة'
   },
   es: {
     appTitle:'Precios MSP', tabSelector:'Selector', tabTender:'Licitación',
@@ -156,7 +156,7 @@ const STRINGS = {
     contactSales:'Contacte a nuestro equipo de ventas para estas especificaciones.',
     followUs:'Síguenos', contactUs:'Contáctenos',
     motorModel:'Modelo de motor', motorPlaceholder:'p. ej. MSM 6/25', pump:'Bomba',
-    motorDiscountRate:'Tasa de descuento del motor'
+    motorDiscountRate:'Tasa de descuento del motor', pumpDiscountRate:'Tasa de descuento de la bomba'
   }
 };
 

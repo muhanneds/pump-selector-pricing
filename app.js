@@ -737,7 +737,7 @@ function renderLineCard(line, idx){
       </div>
       <div class="field row3">
         <div>
-          <label>${t('discountRate')}</label>
+          <label>${t('pumpDiscountRate')}</label>
           <div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="discount" value="${line.discount||0}"><span class="unit">%</span></div>
         </div>
         <div>
