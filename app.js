@@ -735,7 +735,7 @@ function renderLineCard(line, idx){
         <label>${t('motorModel')}</label>
         <input type="text" list="motorCodeList" class="line-input motor-input" data-field="motorCode" value="${line.motorCode||''}" placeholder="${t('motorPlaceholder')}" autocomplete="off">
       </div>
-      <div class="field row3">
+      <div class="field row3 discount-row">
         <div>
           <label>${t('pumpDiscountRate')}</label>
           <div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="discount" value="${line.discount||0}"><span class="unit">%</span></div>
