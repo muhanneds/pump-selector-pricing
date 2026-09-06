@@ -238,7 +238,7 @@ function saveTenderLines(){
 }
 function newLine(){
   return { id: Date.now()+Math.random().toString(16).slice(2), material:'Stainless Steel',
-           sizeClass:'6plus', frequency:'50Hz', Q:'', H:'', safety:0, tag:'', discount:0, unitNo:1, motorCode:'' };
+           sizeClass:'6plus', frequency:'50Hz', Q:'', H:'', safety:0, tag:'', discount:0, unitNo:1, motorCode:'', motorDiscount:0 };
 }
 
 // Looks up a motor by the code the user typed/selected, exact match against
@@ -263,10 +263,11 @@ function tenderTotal(){
     if (r.primary && r.primary.model && r.primary.model.price != null){
       hasAnyPrice = true;
       const motor = motorLookup(line.motorCode);
-      const listPrice = r.primary.model.price + (motor ? motor.price : 0);
       const disc = Number(line.discount)||0;
+      const motorDisc = Number(line.motorDiscount)||0;
       const qty = Number(line.unitNo)||1;
-      total += listPrice * (100-disc)/100 * qty;
+      const net = r.primary.model.price * (100-disc)/100 + (motor ? motor.price * (100-motorDisc)/100 : 0);
+      total += net * qty;
     }
   }
   return { total, hasAnyPrice };
@@ -299,10 +300,14 @@ function summaryRows(){
     const qty = Number(line.unitNo)||1;
     const disc = Number(line.discount)||0;
     const motor = motorLookup(line.motorCode);
+    const motorDisc = Number(line.motorDiscount)||0;
     const price = r.primary.model.price + (motor ? motor.price : 0);
-    const net = price * (100-disc)/100;
+    const net = r.primary.model.price * (100-disc)/100 + (motor ? motor.price * (100-motorDisc)/100 : 0);
     const model = r.primary.model.name + (motor ? ' + ' + line.motorCode.trim() : '');
-    rows.push({ idx, model, qty, price, disc, net, lineTotal: net*qty });
+    // A single line can carry two different discount rates (pump vs motor) --
+    // show both when a motor's involved, one plain rate otherwise.
+    const discLabel = motor ? `${disc}% / ${motorDisc}%` : `${disc}%`;
+    rows.push({ idx, model, qty, price, disc: discLabel, net, lineTotal: net*qty });
   });
   return rows;
 }
@@ -315,7 +320,7 @@ function renderSummaryHTML(){
       <td>${r.idx+1}</td>
       <td><bdi>${r.model}</bdi></td>
       <td><bdi>${fmtPrice(r.price)}</bdi></td>
-      <td>${r.disc>0 ? '<bdi>'+t('percentOff',{pct:r.disc})+'</bdi>' : '—'}</td>
+      <td>${r.disc==='0%' ? '—' : '<bdi>'+r.disc+'</bdi>'}</td>
       <td><bdi>${r.qty}</bdi></td>
       <td><bdi>${fmtPrice(r.net)}</bdi></td>
       <td><bdi>${fmtPrice(r.lineTotal)}</bdi></td>
@@ -654,11 +659,14 @@ function lineOutputs(line){
       const pumpPrice = r.primary.model.price;
       const motor = motorLookup(line.motorCode);
       const motorPrice = motor ? motor.price : null;
+      const motorDisc = Number(line.motorDiscount)||0;
       const price = pumpPrice != null ? pumpPrice + (motorPrice || 0) : null;
-      const netPrice = price != null ? price * (100-disc)/100 : null;
+      const netPrice = pumpPrice != null
+        ? pumpPrice * (100-disc)/100 + (motor ? motorPrice * (100-motorDisc)/100 : 0)
+        : null;
       const qty = Number(line.unitNo)||1;
       const lineTotal = netPrice != null ? netPrice * qty : null;
-      key = 'ok:'+r.primary.model.name+':'+r.primary.achievedHead+':'+disc+':'+qty+':'+(line.motorCode||'');
+      key = 'ok:'+r.primary.model.name+':'+r.primary.achievedHead+':'+disc+':'+motorDisc+':'+qty+':'+(line.motorCode||'');
       const justChanged = key !== lineResultKey.get(line.id);
       summaryModel = `<bdi>${r.primary.model.name}</bdi>`;
       summaryExtra = `<bdi>${fmt(r.primary.model.hp,2)} HP · L=${r.primary.model.len ? r.primary.model.len+' mm' : '—'}</bdi>`;
@@ -669,9 +677,15 @@ function lineOutputs(line){
           <div><div class="stat-label">${t('length')}</div><div class="stat-value"><bdi>${r.primary.model.len ? r.primary.model.len+' mm' : '—'}</bdi></div></div>
           <div><div class="stat-label">HM</div><div class="stat-value"><bdi>${fmt(r.primary.achievedHead)} m</bdi></div></div>
         </div>`;
+      // With a motor, pump and motor each carry their own discount rate, so a
+      // single top-level "X% off" would misrepresent one of them -- each
+      // rate is shown inline next to its own component instead.
+      const breakdown = motor
+        ? ` <span class="strip-label">(${t('pump')} <bdi>${fmtPrice(pumpPrice)}</bdi>${disc>0?' · '+t('percentOff',{pct:bidi(disc)}):''} + ${t('motor')} <bdi>${fmtPrice(motorPrice)}</bdi>${motorDisc>0?' · '+t('percentOff',{pct:bidi(motorDisc)}):''})</span>`
+        : '';
       priceHTML = `
         ${price != null ? `<div class="result-strip price-strip">
-          <span class="rmeta">${t('list')} <bdi>${fmtPrice(price)}</bdi>${disc>0?' · '+t('percentOff',{pct: bidi(disc)}):''}${motor ? ` <span class="strip-label">(${t('pump')} <bdi>${fmtPrice(pumpPrice)}</bdi> + ${t('motor')} <bdi>${fmtPrice(motorPrice)}</bdi>)</span>` : ''}</span>
+          <span class="rmeta">${t('list')} <bdi>${fmtPrice(price)}</bdi>${!motor && disc>0?' · '+t('percentOff',{pct: bidi(disc)}):''}${breakdown}</span>
           <span class="rmodel net-price"><span class="strip-label">${t('unitPrice')}</span> <bdi>${fmtPrice(netPrice)}</bdi>${qty>1?` · <span class="strip-label">${t('lineTotal')}</span> <bdi>${fmtPrice(lineTotal)}</bdi>`:''}</span>
         </div>` : ''}
         ${r.alt && r.alt.model ? `<div class="result-strip alt-row"><span class="rmeta">${t('altShort')} <bdi>${r.alt.model.name}</bdi></span><span class="rmodel">${r.alt.model.price!=null?'<bdi>'+fmtPrice(r.alt.model.price)+'</bdi>':''}</span></div>` : ''}
@@ -721,10 +735,14 @@ function renderLineCard(line, idx){
         <label>${t('motorModel')}</label>
         <input type="text" list="motorCodeList" class="line-input motor-input" data-field="motorCode" value="${line.motorCode||''}" placeholder="${t('motorPlaceholder')}" autocomplete="off">
       </div>
-      <div class="field row2">
+      <div class="field row3">
         <div>
           <label>${t('discountRate')}</label>
           <div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="discount" value="${line.discount||0}"><span class="unit">%</span></div>
+        </div>
+        <div>
+          <label>${t('motorDiscountRate')}</label>
+          <div class="numfield"><input type="number" inputmode="decimal" class="line-input" data-field="motorDiscount" value="${line.motorDiscount||0}"><span class="unit">%</span></div>
         </div>
         <div>
           <label>${t('unitNo')}</label>
