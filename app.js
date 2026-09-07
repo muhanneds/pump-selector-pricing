@@ -1517,7 +1517,10 @@ function proformaHTML(){
 
   return `
   <div class="pf-doc" dir="ltr">
-    <div class="pf-letterhead">${esc(PF_FIXED.letterhead)}</div>
+    <div class="pf-letterhead">
+      <div class="pf-letterhead-text">${esc(PF_FIXED.letterhead)}</div>
+      <img class="pf-logo" src="app-icons/msp-logo-letterhead.png" alt="MSP">
+    </div>
     <h1 class="pf-title">PROFORMA INVOICE</h1>
 
     <div class="pf-block">
