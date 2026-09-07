@@ -1349,6 +1349,10 @@ function renderSummarySheet(){
           <input type="checkbox" ${proformaStamp ? 'checked' : ''} onchange="toggleProformaStamp()">
           <span>${t('stampSignature')}</span>
         </label>
+        <label class="summary-toggle">
+          <input type="checkbox" ${proformaNema ? 'checked' : ''} onchange="toggleProformaNema()">
+          <span>${t('nemaColumn')}</span>
+        </label>
         <button type="button" class="pf-zoombtn" onclick="toggleProformaFit()">
           ${proformaFit ? t('zoomFull') : t('zoomFit')}
         </button>` : ''}
@@ -1721,7 +1725,24 @@ function pfDate(iso){
 // The page keeps its true width and is scaled down to whatever room there is,
 // exactly like the print preview it stands in for.
 const PF_PAGE_WIDTH = 780;
-const STORE_KEY_PROFORMA_FIT = 'msp_proforma_fit_v1';
+const STORE_KEY_PROFORMA_FIT  = 'msp_proforma_fit_v1';
+const STORE_KEY_PROFORMA_NEMA = 'msp_proforma_nema_v1';
+
+// The Suction / NEMA column is on the workbook's sheet but is not always
+// filled: it says something for a pump (the borehole size) and for a bare
+// motor (its frame), and nothing at all on a quotation where neither was
+// pinned down. An empty column on a printed proforma invites the question
+// "what belongs there?", so it can be dropped -- the remaining columns take
+// its width rather than leaving a gap.
+let proformaNema = loadProformaNema();
+function loadProformaNema(){
+  try{ return localStorage.getItem(STORE_KEY_PROFORMA_NEMA) !== '0'; }catch(e){ return true; }
+}
+function toggleProformaNema(){
+  proformaNema = !proformaNema;
+  try{ localStorage.setItem(STORE_KEY_PROFORMA_NEMA, proformaNema ? '1' : '0'); }catch(e){}
+  showSummary(summaryPrimary);
+}
 
 // Fit shows the whole page at once, which on a phone is a thumbnail: right
 // for checking the shape of the document, too small to read. Full size is
@@ -1756,15 +1777,26 @@ function fitProformaPage(){
 }
 window.addEventListener('resize', fitProformaPage);
 
+// The workbook's column widths (A 5.14 … I 12.57 characters) as percentages,
+// so the document keeps the sheet's proportions at any width. Without the
+// NEMA column its share goes to the description, which is the column that
+// always wants more room.
+const PF_COLS      = [4.2, 6.0, 5.9, 6.6, 13.0, 39.2, 6.3, 8.6, 10.2];
+const PF_COLS_NONEMA = [4.2, 6.0, 5.9, 13.0, 45.8, 6.3, 8.6, 10.2];
+
 function proformaHTML(){
   const T = pfT();
   const rows = proformaLines();
+  const cols = proformaNema ? PF_COLS : PF_COLS_NONEMA;
+  const colgroup = cols.map(w => `<col style="width:${w}%">`).join('');
+  const nCols = cols.length;
+
   const body = rows.map(function(r, i){ return `
     <tr>
       <td class="pf-c">${i+1}</td>
       <td class="pf-c">${esc(r.q)}</td>
       <td class="pf-c">${esc(r.hm)}</td>
-      <td class="pf-c">${esc(r.suction)}</td>
+      ${proformaNema ? `<td class="pf-c">${esc(r.suction)}</td>` : ''}
       <td class="pf-code">${esc(r.code)}</td>
       <td class="pf-desc">${esc(r.desc)}</td>
       <td class="pf-c">${r.qty}</td>
@@ -1801,14 +1833,16 @@ function proformaHTML(){
 
     <div class="pf-table-wrap">
       <table class="pf-table">
+        <colgroup>${colgroup}</colgroup>
         <thead><tr>
           <th>${esc(T.colNo)}</th><th>${esc(T.colQ)}</th><th>${esc(T.colHm)}</th>
-          <th>${esc(T.colSuction)}</th><th>${esc(T.colCode)}</th><th>${esc(T.colDesc)}</th>
+          ${proformaNema ? `<th>${esc(T.colSuction)}</th>` : ''}
+          <th>${esc(T.colCode)}</th><th>${esc(T.colDesc)}</th>
           <th>${esc(T.colQty)}</th><th>${T.colUnit}</th><th>${T.colTotal}</th>
         </tr></thead>
-        <tbody>${body || `<tr><td colspan="9" class="pf-empty">${esc(T.noLines)}</td></tr>`}</tbody>
+        <tbody>${body || `<tr><td colspan="${nCols}" class="pf-empty">${esc(T.noLines)}</td></tr>`}</tbody>
         <tfoot><tr>
-          <td colspan="7" class="pf-total-label">${esc(T.total)}</td>
+          <td colspan="${nCols - 2}" class="pf-total-label">${esc(T.total)}</td>
           <td class="pf-n"></td>
           <td class="pf-n pf-total-value">${pfMoney(proformaTotal())}</td>
         </tr></tfoot>
@@ -1864,10 +1898,16 @@ function proformaCSVRows(){
   out.push([T.email, pfDoc.email]);
   out.push([T.piNo, pfDoc.piNo, '', '', '', '', T.date, pfDate(pfDoc.date)]);
   out.push([T.description]);
-  out.push([T.colNo, T.colQ, T.colHm, T.colSuction, T.colCode, T.colDesc,
-            T.colQty, T.colUnitFlat, T.colTotalFlat]);
-  proformaLines().forEach(function(r,i){ out.push([i+1, r.q, r.hm, r.suction, r.code, r.desc, r.qty, r.unit, r.total]); });
-  out.push(['','','','','','', T.total, '', proformaTotal()]);
+  out.push(proformaNema
+    ? [T.colNo, T.colQ, T.colHm, T.colSuction, T.colCode, T.colDesc, T.colQty, T.colUnitFlat, T.colTotalFlat]
+    : [T.colNo, T.colQ, T.colHm, T.colCode, T.colDesc, T.colQty, T.colUnitFlat, T.colTotalFlat]);
+  proformaLines().forEach(function(r,i){
+    out.push(proformaNema
+      ? [i+1, r.q, r.hm, r.suction, r.code, r.desc, r.qty, r.unit, r.total]
+      : [i+1, r.q, r.hm, r.code, r.desc, r.qty, r.unit, r.total]);
+  });
+  out.push(proformaNema ? ['','','','','','', T.total, '', proformaTotal()]
+                        : ['','','','','', T.total, '', proformaTotal()]);
   out.push([]);
   out.push([T.paymentTerm, pfDoc.paymentTerm]);
   out.push([T.deliveryTime, pfDoc.deliveryTime]);

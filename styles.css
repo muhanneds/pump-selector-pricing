@@ -463,8 +463,6 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 
 @media print{
   .topbar, .tabbar, #toast{ display:none; }
-  .summary-overlay{ position:static; background:none; padding:0; opacity:1; }
-  .summary-sheet{ box-shadow:none; border:none; margin-top:0; max-width:none; }
 }
 
 .empty{
@@ -993,18 +991,24 @@ bdi{ unicode-bidi: isolate; }
 }
 
 .pf-table-wrap{ overflow-x:auto; }
-.pf-table{ width:100%; border-collapse:collapse; font-size:11px; }
+.pf-table{
+  width:100%; border-collapse:collapse; font-size:11px;
+  /* The colgroup carries the workbook's proportions; fixed layout is what
+     makes the browser honour them instead of sizing to content, which is how
+     the table used to grow past the paper. */
+  table-layout:fixed;
+}
 .pf-table th, .pf-table td{ border:1px solid #000; padding:4px 6px; vertical-align:middle; }
 .pf-table th{
   background:var(--pf-navy); color:#fff;
   font-weight:700; font-size:10px; text-align:center;
 }
-.pf-c{ text-align:center; white-space:nowrap; }
-.pf-n{ text-align:right; white-space:nowrap; font-family:var(--font-mono); }
-.pf-code{ font-family:var(--font-mono); font-weight:700; white-space:nowrap; }
-/* Description is the one column allowed to wrap — it is column F in the
-   workbook, the widest on the sheet, and truncating it loses the spec. */
-.pf-desc{ min-width:230px; }
+.pf-c{ text-align:center; }
+.pf-n{ text-align:right; font-family:var(--font-mono); }
+.pf-code{ font-family:var(--font-mono); font-weight:700; overflow-wrap:anywhere; }
+/* Description is column F in the workbook, the widest on the sheet, and
+   truncating it loses the spec — so it wraps. */
+.pf-desc{ overflow-wrap:anywhere; }
 .pf-empty{ text-align:center; padding:16px; color:#666; }
 .pf-table tfoot td{ background:var(--pf-navy); color:#fff; }
 .pf-total-label{ text-align:right; font-weight:700; letter-spacing:.5px; }
@@ -1049,28 +1053,58 @@ bdi{ unicode-bidi: isolate; }
   background:var(--navy); border-color:var(--navy); color:#fff;
 }
 
+/* A4 with real margins. Without this the browser picks its own, and the
+   letterhead ends up hard against the edge of the sheet. */
+@page{ size:A4 portrait; margin:12mm 10mm; }
+
 @media print{
+  /* The overlay is a centred flex box that scrolls. Neither survives being
+     printed: an overflow container does not paginate, so everything past the
+     first page was being clipped. On paper it is a plain block. */
+  html, body{ background:#fff; height:auto; overflow:visible; }
+  /* The app is a 560px phone column. On A4 that column would print five and
+     a half inches wide with an inch and a half of blank paper beside it, so
+     on paper the shell gives up its width to the document. */
+  #app{ max-width:none !important; width:auto !important; margin:0 !important; }
+  .summary-overlay{
+    position:static !important; display:block !important; overflow:visible !important;
+    inset:auto; padding:0 !important; background:none; opacity:1;
+  }
+  .summary-sheet{
+    display:block; width:auto; max-width:none;
+    margin:0 !important; padding:0 !important;
+    border:none; border-radius:0; box-shadow:none;
+  }
   .summary-sheet.is-proforma{ max-width:none; }
-  /* Paper has the room the phone did not: the page prints unscaled. */
-  .pf-viewport{ overflow:visible; height:auto !important; }
-  .pf-page{ width:auto; transform:none !important; }
+  /* Paper has the room the phone did not: the page prints unscaled and at
+     the paper's own width, never the 780px the screen preview uses. */
+  .pf-viewport{ overflow:visible !important; height:auto !important; }
+  .pf-page{ width:100% !important; transform:none !important; }
+  .pf-table-wrap{ overflow:visible !important; }
   /* The doc carries its own PROFORMA INVOICE title; the overlay's heading
      above it would print as a second one. */
   .summary-sheet.is-proforma .summary-sheet-head{ display:none; }
-  .pf-doc{ font-size:10px; }
-  .pf-table{ font-size:9.5px; }
-  /* Filled fields print as plain typed text, and an empty one prints blank
-     rather than showing its placeholder hint. */
+  .pf-doc{ font-size:9.5px; }
+  .pf-table{ font-size:8.5px; }
+  .pf-table th, .pf-table td{ padding:3px 4px; }
+  .pf-row{ grid-template-columns:135px 1fr; }
+  .pf-row-split{ grid-template-columns:135px 1fr 62px 110px; }
+  .pf-logo{ width:80px; }
+  /* An unfilled value prints blank rather than carrying its prompt onto the
+     document. */
   .pf-blank{ color:transparent; }
-  .pf-stamp{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .pf-table-wrap{ overflow:visible; }
+  /* Nothing that reads as one unit may be split across a page break, and a
+     table running over the break repeats its header. */
   .pf-table thead{ display:table-header-group; }
   .pf-table tr{ break-inside:avoid; }
+  .pf-letterhead, .pf-title, .pf-description,
   .pf-block, .pf-bank-head, .pf-sign{ break-inside:avoid; }
-  /* The grey label/header fills carry the sheet's structure, so they have to
+  .pf-bank-head{ break-before:auto; }
+  /* The grey and navy fills carry the sheet's structure, so they have to
      survive the browser's default background-stripping. */
   .pf-letterhead, .pf-title, .pf-label, .pf-description,
-  .pf-table th, .pf-table tfoot td, .pf-bank-head{
+  .pf-table th, .pf-table tfoot td, .pf-bank-head, .pf-stamp{
     -webkit-print-color-adjust:exact; print-color-adjust:exact;
   }
 }
+
