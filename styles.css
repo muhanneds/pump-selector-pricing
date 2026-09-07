@@ -815,3 +815,101 @@ bdi{ unicode-bidi: isolate; }
   .summary-sheet{ padding:0; }
   .summary-section-head{ color:#000; }
 }
+
+/* ---------- Proforma invoice document ----------
+   This is the PI sheet of the export workbook, not an app screen: hairline
+   borders, no rounded corners, no brand fills. It has to survive being printed
+   to PDF and read next to a proforma the office produced from Excel, so the
+   styling stays deliberately plain and stays LTR in every UI language. */
+.summary-sheet.is-proforma{ max-width:920px; }
+.pf-doc{
+  font-family: var(--font-ui); font-size:11.5px; color:#000; line-height:1.4;
+}
+.pf-letterhead{
+  border:1px solid #000; padding:8px 10px; text-align:center;
+  font-weight:700; font-size:11px; line-height:1.5;
+}
+.pf-title{
+  text-align:center; font-size:15px; font-weight:800; letter-spacing:1.2px;
+  margin:10px 0 12px;
+}
+
+/* Label/value pairs — the sheet's A:D / E:I merge, as a two-column grid. */
+.pf-block{ border:1px solid #000; border-bottom:none; }
+.pf-row{ display:grid; grid-template-columns:150px 1fr; border-bottom:1px solid #000; }
+.pf-row-split{ grid-template-columns:150px 1fr 70px 130px; }
+.pf-label{
+  padding:5px 8px; font-weight:700; background:#F2F2F2;
+  border-right:1px solid #000; white-space:nowrap;
+}
+.pf-label-date{ border-left:1px solid #000; }
+.pf-value{ padding:0; min-width:0; display:flex; align-items:stretch; }
+.pf-value-date{ border-left:none; }
+.pf-fixed{ padding:5px 8px; align-self:center; word-break:break-word; }
+
+/* Editable header/terms fields sit flush in their cell: the amber underlay is
+   the app's live-field cue, and it is dropped on print so the document looks
+   typed rather than filled in. */
+.pf-input{
+  width:100%; border:none; background:#FFFBEF; padding:5px 8px;
+  font:inherit; color:#000; min-width:0;
+}
+.pf-input:focus{ outline:2px solid var(--amber-deep); outline-offset:-2px; }
+.pf-input::placeholder{ color:#9AA3B0; }
+/* The print twin of an editable field — hidden on screen, see @media print. */
+.pf-echo{ display:none; }
+
+.pf-description{
+  border:1px solid #000; border-top:none; padding:5px 8px;
+  font-weight:700; font-size:11px;
+}
+
+.pf-table-wrap{ overflow-x:auto; }
+.pf-table{ width:100%; border-collapse:collapse; font-size:11px; }
+.pf-table th, .pf-table td{ border:1px solid #000; padding:4px 6px; vertical-align:middle; }
+.pf-table th{ background:#F2F2F2; font-weight:700; font-size:10px; text-align:center; }
+.pf-c{ text-align:center; white-space:nowrap; }
+.pf-n{ text-align:right; white-space:nowrap; font-family:var(--font-mono); }
+.pf-code{ font-family:var(--font-mono); font-weight:700; white-space:nowrap; }
+/* Description is the one column allowed to wrap — it is column F in the
+   workbook, the widest on the sheet, and truncating it loses the spec. */
+.pf-desc{ min-width:230px; }
+.pf-empty{ text-align:center; padding:16px; color:#666; }
+.pf-total-label{ text-align:right; font-weight:800; }
+.pf-total-value{ font-weight:800; }
+
+.pf-bank-head{
+  border:1px solid #000; border-top:none; padding:5px 8px;
+  text-align:center; font-weight:800; letter-spacing:.6px; background:#F2F2F2;
+}
+/* The sheet's merged G123:I125 signature box. */
+.pf-sign{
+  border:1px solid #000; border-top:none; height:78px;
+  display:flex; align-items:flex-start; justify-content:flex-end;
+  padding:6px 10px; font-size:10px; color:#666;
+}
+
+/* The document is fixed English; an RTL UI must not mirror it. */
+[dir="rtl"] .pf-doc{ direction:ltr; text-align:left; }
+
+@media print{
+  .summary-sheet.is-proforma{ max-width:none; }
+  /* The doc carries its own PROFORMA INVOICE title; the overlay's heading
+     above it would print as a second one. */
+  .summary-sheet.is-proforma .summary-sheet-head{ display:none; }
+  .pf-doc{ font-size:10px; }
+  .pf-table{ font-size:9.5px; }
+  /* Filled fields print as plain typed text, and an empty one prints blank
+     rather than showing its placeholder hint. */
+  .pf-input{ display:none; }
+  .pf-echo{ display:block; padding:5px 8px; word-break:break-word; }
+  .pf-table-wrap{ overflow:visible; }
+  .pf-table thead{ display:table-header-group; }
+  .pf-table tr{ break-inside:avoid; }
+  .pf-block, .pf-bank-head, .pf-sign{ break-inside:avoid; }
+  /* The grey label/header fills carry the sheet's structure, so they have to
+     survive the browser's default background-stripping. */
+  .pf-label, .pf-table th, .pf-bank-head{
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+}

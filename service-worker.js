@@ -1,4 +1,4 @@
-const CACHE_NAME = 'msp-pump-pricing-v49';
+const CACHE_NAME = 'msp-pump-pricing-v50';
 const ASSETS = [
   './',
   './index.html',
