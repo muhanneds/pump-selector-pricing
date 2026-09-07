@@ -1,4 +1,4 @@
-const CACHE_NAME = 'msp-pump-pricing-v61';
+const CACHE_NAME = 'msp-pump-pricing-v63';
 const ASSETS = [
   './',
   './index.html',
@@ -8,6 +8,7 @@ const ASSETS = [
   './data.js',
   './motor-data.js',
   './app.js',
+  './print.js',
   './manifest.json',
   './app-icons/icon-192.png',
   './app-icons/icon-512.png',

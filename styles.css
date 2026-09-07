@@ -461,10 +461,6 @@ button.unit.unit-toggle:active{ background: var(--amber); border-color: var(--am
 .summary-grand-value{ font-family:var(--font-mono); font-size:18px; color: var(--amber-deep); }
 [dir="rtl"] .summary-table th{ text-align:right; }
 
-@media print{
-  .topbar, .tabbar, #toast{ display:none; }
-}
-
 .empty{
   text-align:center; padding: 48px 20px; color: var(--ink-faint);
 }
@@ -918,18 +914,6 @@ bdi{ unicode-bidi: isolate; }
 }
 [dir="rtl"] .cust-sub{ text-transform:none; letter-spacing:0; }
 
-/* Print is how a proforma PDF actually gets made, so the page behind the
-   overlay and the sheet's own controls come out of the printout. */
-@media print{
-  main, .social-footer{ display:none !important; }
-  .summary-tools, .summary-sheet-head{ display:none !important; }
-  .summary-sheet{ padding:0; }
-  .summary-section-head{ color:#000; }
-  .sum-head{ break-inside:avoid; }
-  .sum-row{ break-inside:avoid; }
-  .kpi, .sum-head{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-}
-
 /* ---------- Proforma invoice document ----------
    This is the PI sheet of the export workbook, not an app screen: hairline
    borders, no rounded corners, no brand fills. It has to survive being printed
@@ -1059,57 +1043,6 @@ bdi{ unicode-bidi: isolate; }
   background:var(--navy); border-color:var(--navy); color:#fff;
 }
 
-/* A4 with real margins. Without this the browser picks its own, and the
-   letterhead ends up hard against the edge of the sheet. */
-@page{ size:A4 portrait; margin:12mm 10mm; }
-
-@media print{
-  /* The overlay is a centred flex box that scrolls. Neither survives being
-     printed: an overflow container does not paginate, so everything past the
-     first page was being clipped. On paper it is a plain block. */
-  html, body{ background:#fff; height:auto; overflow:visible; }
-  /* The app is a 560px phone column. On A4 that column would print five and
-     a half inches wide with an inch and a half of blank paper beside it, so
-     on paper the shell gives up its width to the document. */
-  #app{ max-width:none !important; width:auto !important; margin:0 !important; }
-  .summary-overlay{
-    position:static !important; display:block !important; overflow:visible !important;
-    inset:auto; padding:0 !important; background:none; opacity:1;
-  }
-  .summary-sheet{
-    display:block; width:auto; max-width:none;
-    margin:0 !important; padding:0 !important;
-    border:none; border-radius:0; box-shadow:none;
-  }
-  .summary-sheet.is-proforma{ max-width:none; }
-  .pf-table-wrap{ overflow:visible !important; }
-  .pf-table{ min-width:0; }
-  /* The doc carries its own PROFORMA INVOICE title; the overlay's heading
-     above it would print as a second one. */
-  .summary-sheet.is-proforma .summary-sheet-head{ display:none; }
-  .pf-doc{ font-size:9.5px; }
-  .pf-table{ font-size:8.5px; }
-  .pf-table th, .pf-table td{ padding:3px 4px; }
-  .pf-row{ grid-template-columns:135px 1fr; }
-  .pf-row-split{ grid-template-columns:135px 1fr 62px 110px; }
-  .pf-logo{ width:80px; }
-  /* An unfilled value prints blank rather than carrying its prompt onto the
-     document. */
-  .pf-blank{ color:transparent; }
-  /* Nothing that reads as one unit may be split across a page break, and a
-     table running over the break repeats its header. */
-  .pf-table thead{ display:table-header-group; }
-  .pf-table tr{ break-inside:avoid; }
-  .pf-letterhead, .pf-title, .pf-description,
-  .pf-block, .pf-bank-head, .pf-sign{ break-inside:avoid; }
-  .pf-bank-head{ break-before:auto; }
-  /* The grey and navy fills carry the sheet's structure, so they have to
-     survive the browser's default background-stripping. */
-  .pf-letterhead, .pf-title, .pf-label, .pf-description,
-  .pf-table th, .pf-table tfoot td, .pf-bank-head, .pf-stamp{
-    -webkit-print-color-adjust:exact; print-color-adjust:exact;
-  }
-}
 
 /* On a phone the document's label/value pairs stop being two columns and
    stack. It is the one change that keeps it readable at 375px: a 150px label
@@ -1124,4 +1057,163 @@ bdi{ unicode-bidi: isolate; }
   .pf-label{ border-right:none; border-bottom:1px solid #000; }
   .pf-label-date{ border-left:none; border-top:1px solid #000; }
   .pf-fixed{ min-height:22px; }
+}
+
+/* =========================================================================
+   Print
+   The printed document is built fresh into #printRoot (see print.js) and is
+   the only thing on the page when printing. Nothing here styles a screen
+   class, and nothing on screen is dragged onto paper — that separation is
+   the whole point, and it is why pagination works.
+
+   Everything is in points, the unit paper is actually measured in.
+   ========================================================================= */
+#printRoot{ display:none; }
+
+@media print{
+  @page{ size:A4 portrait; margin:14mm 12mm 18mm; }
+
+  /* The app steps aside completely. */
+  html, body{ background:#fff; height:auto; overflow:visible; }
+  #app, .topbar, .tabbar, #toast, .summary-overlay{ display:none !important; }
+  #printRoot{ display:block; }
+
+  .p-sheet{
+    font-family: Cambria, "Hoefler Text", "Times New Roman", Times, serif;
+    font-size:9.5pt; line-height:1.45; color:#14213A;
+  }
+
+  /* ---- masthead ---- */
+  .p-head{
+    display:flex; align-items:flex-end; justify-content:space-between; gap:16pt;
+    border-bottom:2.5pt solid #17375E; padding-bottom:7pt; margin-bottom:12pt;
+  }
+  .p-logo{ height:34pt; width:auto; display:block; }
+  .p-company{
+    font-size:8pt; font-weight:700; letter-spacing:.5pt;
+    color:#17375E; margin-top:5pt;
+  }
+  .p-head-right{ text-align:right; font-size:8.5pt; line-height:1.7; }
+  .p-head-right h1{
+    font-size:17pt; font-weight:700; letter-spacing:1.5pt;
+    color:#17375E; margin:0 0 3pt;
+  }
+  .p-head-right span{ color:#5B6B85; }
+
+  /* ---- the two parties, side by side ---- */
+  .p-parties{ display:flex; gap:14pt; margin-bottom:11pt; }
+  .p-party{
+    flex:1; border:0.6pt solid #C9D3E0; border-left:2.5pt solid #17375E;
+    padding:6pt 8pt; min-width:0;
+  }
+  .p-party-h{
+    font-size:7pt; font-weight:700; letter-spacing:.8pt; text-transform:uppercase;
+    color:#5B6B85; margin-bottom:3pt;
+  }
+  .p-party-name{ font-size:10.5pt; font-weight:700; color:#17375E; }
+  .p-party-body{ font-size:8.5pt; color:#14213A; margin-top:1pt; }
+
+  .p-desc-bar{
+    background:#17375E; color:#fff; font-size:8pt; font-weight:700;
+    letter-spacing:.5pt; padding:4pt 8pt; margin-bottom:0;
+  }
+
+  /* ---- lines ---- */
+  .p-table{ width:100%; border-collapse:collapse; font-size:8pt; table-layout:fixed; }
+  .p-table th{
+    background:#EDF1F6; color:#17375E; text-align:left;
+    font-size:7pt; font-weight:700; letter-spacing:.3pt; text-transform:uppercase;
+    padding:4pt 5pt; border-bottom:1pt solid #17375E;
+  }
+  .p-table td{
+    padding:5pt; border-bottom:0.5pt solid #D8DFE8;
+    vertical-align:top; overflow-wrap:anywhere;
+  }
+  /* A line item is one thing; it never straddles a page. The header repeats
+     on every page the table reaches. */
+  .p-table thead{ display:table-header-group; }
+  .p-table tr{ break-inside:avoid; }
+  .p-c{ text-align:center; }
+  .p-n{ text-align:right; font-variant-numeric:tabular-nums; }
+  .p-code{ font-weight:700; color:#17375E; }
+  .p-dim{ color:#93A1B8; font-weight:400; }
+  .p-empty{ text-align:center; color:#93A1B8; padding:12pt; }
+
+  /* ---- the total, in figures and in words ---- */
+  .p-totalbar{
+    display:flex; align-items:stretch; gap:0;
+    border:1pt solid #17375E; border-top:none; break-inside:avoid; margin-bottom:12pt;
+  }
+  .p-words{ flex:1; padding:6pt 8pt; min-width:0; border-right:1pt solid #17375E; }
+  .p-words-l{
+    display:block; font-size:6.5pt; font-weight:700; letter-spacing:.6pt;
+    text-transform:uppercase; color:#5B6B85;
+  }
+  .p-words-v{ display:block; font-size:8.5pt; font-weight:700; color:#14213A; margin-top:2pt; }
+  .p-grand{
+    flex:none; min-width:150pt; background:#17375E; color:#fff;
+    padding:6pt 10pt; text-align:right;
+  }
+  .p-grand-l{
+    display:block; font-size:6.5pt; font-weight:700; letter-spacing:.8pt;
+    text-transform:uppercase; opacity:.8;
+  }
+  .p-grand-v{ display:block; font-size:14pt; font-weight:700; margin-top:1pt; }
+
+  /* ---- terms and bank, two columns ---- */
+  .p-cols{ display:flex; gap:14pt; align-items:flex-start; break-inside:avoid; }
+  .p-terms{ flex:1; border-collapse:collapse; font-size:8pt; }
+  .p-terms th{
+    text-align:left; vertical-align:top; white-space:nowrap;
+    font-size:7pt; font-weight:700; letter-spacing:.4pt; text-transform:uppercase;
+    color:#5B6B85; padding:3.5pt 8pt 3.5pt 0; width:1%;
+  }
+  .p-terms td{
+    padding:3.5pt 0; border-bottom:0.5pt solid #E4EAF2;
+    overflow-wrap:anywhere;
+  }
+  .p-terms tr:last-child td, .p-terms tr:last-child th{ border-bottom:none; }
+
+  /* ---- signature ---- */
+  .p-sign{ margin-top:16pt; text-align:right; break-inside:avoid; }
+  .p-stamp{ width:150pt; height:auto; display:block; margin:0 0 -14pt auto; }
+  .p-sign-rule{
+    width:170pt; margin-left:auto; border-bottom:0.6pt solid #93A1B8; height:20pt;
+  }
+  .p-sign-l{ font-size:7.5pt; color:#5B6B85; margin-top:3pt; }
+
+  /* ---- summary-only ---- */
+  .p-kpis{ display:flex; gap:6pt; margin-bottom:14pt; break-inside:avoid; }
+  .p-kpi{
+    flex:1; border:0.6pt solid #D8DFE8; border-radius:3pt;
+    padding:6pt 4pt; text-align:center;
+  }
+  .p-kpi:first-child{ background:#17375E; border-color:#17375E; }
+  .p-kpi:first-child .p-kpi-v{ color:#fff; }
+  .p-kpi:first-child .p-kpi-l{ color:#C4D2E6; }
+  .p-kpi-v{ font-size:13pt; font-weight:700; color:#17375E; }
+  .p-kpi-l{ font-size:6.5pt; letter-spacing:.4pt; text-transform:uppercase; color:#5B6B85; margin-top:2pt; }
+  .p-section{ margin-bottom:12pt; }
+  .p-section h2{
+    font-size:8pt; font-weight:700; letter-spacing:.8pt; text-transform:uppercase;
+    color:#5B6B85; margin:0 0 5pt; padding-bottom:3pt;
+    border-bottom:0.6pt solid #D8DFE8;
+  }
+  .p-table-sum tbody tr:nth-child(even) td{ background:#F7F9FC; }
+
+  /* ---- running footer ---- */
+  /* Fixed puts it in the page margin on every sheet, which is the only way to
+     get a repeating footer without page counters the browsers do not support. */
+  .p-foot{
+    position:fixed; left:0; right:0; bottom:0;
+    border-top:0.5pt solid #D8DFE8; padding-top:4pt;
+    font-size:6.5pt; letter-spacing:.2pt; color:#93A1B8; text-align:center;
+  }
+
+  /* The fills carry the document's structure; they must survive the browser's
+     default background-stripping. */
+  .p-head, .p-desc-bar, .p-table th, .p-grand, .p-kpi, .p-party, .p-stamp,
+  .p-table-sum tbody tr:nth-child(even) td{
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
 }

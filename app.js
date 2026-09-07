@@ -1440,7 +1440,11 @@ function downloadSummaryCSV(){
   toast(t('downloaded'));
 }
 
-function printSummary(){ window.print(); }
+// Printing never touches what is on screen: print.js builds a document made
+// for paper and prints that instead. See the note at the top of print.js.
+function printSummary(){
+  if (proformaMode) Print.proforma(); else Print.summary();
+}
 
 // ---------------------------------------------------------------------------
 // Proforma invoice — the PI sheet of the export workbook, rendered from the
@@ -1484,6 +1488,7 @@ const PF_TEXT = {
     colUnit: 'Unit<br>Price', colTotal: 'Total<br>Price',
     colUnitFlat: 'Unit Price', colTotalFlat: 'Total Price',
     total: 'TOTAL', noLines: 'No priced lines yet',
+    amountInWords: 'Amount in words',
     paymentTerm: 'Payment Term', deliveryTime: 'Delivery Time', origin: 'Origin',
     shipmentTerms: 'Shipment Terms', hsCode: 'HS Code', packing: 'Packing',
     brandName: 'Brand Name',
@@ -1515,6 +1520,7 @@ const PF_TEXT = {
     colUnit: 'Birim<br>Fiyat', colTotal: 'Toplam<br>Fiyat',
     colUnitFlat: 'Birim Fiyat', colTotalFlat: 'Toplam Fiyat',
     total: 'TOPLAM', noLines: 'Henüz fiyatlı satır yok',
+    amountInWords: 'Yalnız (yazı ile)',
     paymentTerm: 'Ödeme Şekli', deliveryTime: 'Teslim Süresi', origin: 'Menşei',
     shipmentTerms: 'Teslim Şekli', hsCode: 'GTİP Kodu', packing: 'Ambalaj',
     brandName: 'Marka',
