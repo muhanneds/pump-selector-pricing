@@ -312,46 +312,7 @@ function summaryRows(){
   return rows;
 }
 
-function renderSummaryHTML(){
-  const rows = summaryRows();
-  const grandTotal = rows.reduce((s,r)=>s+r.lineTotal, 0);
-  const rowsHTML = rows.map(r => `
-    <tr>
-      <td>${r.idx+1}</td>
-      <td><bdi>${r.model}</bdi></td>
-      <td><bdi>${fmtPrice(r.price)}</bdi></td>
-      <td>${r.disc==='0%' ? '—' : '<bdi>'+r.disc+'</bdi>'}</td>
-      <td><bdi>${r.qty}</bdi></td>
-      <td><bdi>${fmtPrice(r.net)}</bdi></td>
-      <td><bdi>${fmtPrice(r.lineTotal)}</bdi></td>
-    </tr>`).join('');
-  return `
-    <div class="summary-sheet">
-      <div class="summary-sheet-head">
-        <h2>${t('summaryTitle')}</h2>
-        <button type="button" class="btn btn-ghost btn-sm" onclick="closeSummary()">${t('close')}</button>
-      </div>
-      <div class="summary-table-wrap">
-        <table class="summary-table">
-          <thead><tr>
-            <th>#</th><th>${t('selectedModel')}</th>
-            <th>${t('list')}</th><th>${t('discountRate')}</th><th>${t('qty')}</th><th>${t('net')}</th><th>${t('lineTotal')}</th>
-          </tr></thead>
-          <tbody>${rowsHTML || `<tr><td colspan="7" class="summary-empty">${t('noLines')}</td></tr>`}</tbody>
-        </table>
-      </div>
-      <div class="summary-grand">
-        <span>${t('tenderTotalLabel')}</span>
-        <span class="summary-grand-value"><bdi>${fmtPrice(grandTotal)}</bdi></span>
-      </div>
-    </div>`;
-}
-
-function openSummary(){
-  const overlay = document.getElementById('summaryOverlay');
-  overlay.innerHTML = renderSummaryHTML();
-  overlay.classList.add('open');
-}
+function openSummary(){ showSummary('tender'); }
 function closeSummary(){
   document.getElementById('summaryOverlay').classList.remove('open');
 }
@@ -1158,10 +1119,71 @@ function motorSummaryRows(){
   return rows;
 }
 
-function renderMotorSummaryHTML(){
+function openMotorSummary(){ showSummary('motors'); }
+
+// ---------------------------------------------------------------------------
+// Summary sheet — one sheet, two sections, optionally combined.
+//
+// Tender and Motors each open the sheet on their own section. A toggle adds
+// the other one, which is the first real step toward a proforma: pumps and
+// motors on a single document under a single grand total. It is off by
+// default and remembered, because most quotations are one or the other.
+//
+// The sheet can be taken away as a CSV (their working format is Excel) or
+// printed, which is how a PDF proforma gets made in practice.
+// ---------------------------------------------------------------------------
+const STORE_KEY_SUMMARY_BOTH = 'msp_summary_include_other_v1';
+
+let summaryPrimary = 'tender';
+let summaryIncludeOther = loadSummaryIncludeOther();
+function loadSummaryIncludeOther(){
+  try{ return localStorage.getItem(STORE_KEY_SUMMARY_BOTH) === '1'; }catch(e){ return false; }
+}
+function saveSummaryIncludeOther(){
+  try{ localStorage.setItem(STORE_KEY_SUMMARY_BOTH, summaryIncludeOther ? '1' : '0'); }catch(e){}
+}
+function toggleSummaryOther(){
+  summaryIncludeOther = !summaryIncludeOther;
+  saveSummaryIncludeOther();
+  showSummary(summaryPrimary);
+}
+
+// Which sections the sheet is currently showing, in the order they appear.
+function summarySections(){
+  const other = summaryPrimary === 'tender' ? 'motors' : 'tender';
+  return summaryIncludeOther ? [summaryPrimary, other] : [summaryPrimary];
+}
+
+function pumpSectionHTML(){
+  const rows = summaryRows();
+  const body = rows.map(r => `
+    <tr>
+      <td>${r.idx+1}</td>
+      <td><bdi>${r.model}</bdi></td>
+      <td><bdi>${fmtPrice(r.price)}</bdi></td>
+      <td>${r.disc==='0%' ? '—' : '<bdi>'+r.disc+'</bdi>'}</td>
+      <td><bdi>${r.qty}</bdi></td>
+      <td><bdi>${fmtPrice(r.net)}</bdi></td>
+      <td><bdi>${fmtPrice(r.lineTotal)}</bdi></td>
+    </tr>`).join('');
+  return `
+    <div class="summary-section">
+      <h3 class="summary-section-head">${t('tender')}</h3>
+      <div class="summary-table-wrap">
+        <table class="summary-table">
+          <thead><tr>
+            <th>#</th><th>${t('selectedModel')}</th>
+            <th>${t('list')}</th><th>${t('discountRate')}</th><th>${t('qty')}</th><th>${t('net')}</th><th>${t('lineTotal')}</th>
+          </tr></thead>
+          <tbody>${body || `<tr><td colspan="7" class="summary-empty">${t('noLines')}</td></tr>`}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function motorSectionHTML(){
   const rows = motorSummaryRows();
-  const grandTotal = rows.reduce((s,r)=>s+r.lineTotal, 0);
-  const rowsHTML = rows.map(r => `
+  const body = rows.map(r => `
     <tr>
       <td>${r.idx+1}</td>
       <td><bdi>${r.code}</bdi></td>
@@ -1173,29 +1195,114 @@ function renderMotorSummaryHTML(){
       <td><bdi>${fmtPrice(r.lineTotal)}</bdi></td>
     </tr>`).join('');
   return `
-    <div class="summary-sheet">
-      <div class="summary-sheet-head">
-        <h2>${t('motorSummaryTitle')}</h2>
-        <button type="button" class="btn btn-ghost btn-sm" onclick="closeSummary()">${t('close')}</button>
-      </div>
+    <div class="summary-section">
+      <h3 class="summary-section-head">${t('tabMotors')}</h3>
       <div class="summary-table-wrap">
         <table class="summary-table">
           <thead><tr>
             <th>#</th><th>${t('motorModel')}</th><th>${t('motorLength')}</th>
             <th>${t('list')}</th><th>${t('discountRate')}</th><th>${t('qty')}</th><th>${t('net')}</th><th>${t('lineTotal')}</th>
           </tr></thead>
-          <tbody>${rowsHTML || `<tr><td colspan="8" class="summary-empty">${t('noMotorLines')}</td></tr>`}</tbody>
+          <tbody>${body || `<tr><td colspan="8" class="summary-empty">${t('noMotorLines')}</td></tr>`}</tbody>
         </table>
-      </div>
-      <div class="summary-grand">
-        <span>${t('motorsTotalLabel')}</span>
-        <span class="summary-grand-value"><bdi>${fmtPrice(grandTotal)}</bdi></span>
       </div>
     </div>`;
 }
 
-function openMotorSummary(){
+function summaryGrandTotal(){
+  return summarySections().reduce((sum, sec) => {
+    const rows = sec === 'tender' ? summaryRows() : motorSummaryRows();
+    return sum + rows.reduce((s,r)=>s+r.lineTotal, 0);
+  }, 0);
+}
+
+function renderSummarySheet(){
+  const sections = summarySections();
+  const both = sections.length > 1;
+  const title = both ? t('proformaTitle')
+    : (summaryPrimary === 'tender' ? t('summaryTitle') : t('motorSummaryTitle'));
+  const totalLabel = both ? t('grandTotal')
+    : (summaryPrimary === 'tender' ? t('tenderTotalLabel') : t('motorsTotalLabel'));
+  const otherLabel = summaryPrimary === 'tender' ? t('includeMotors') : t('includeTender');
+
+  const body = sections.map(sec => sec === 'tender' ? pumpSectionHTML() : motorSectionHTML()).join('');
+
+  return `
+    <div class="summary-sheet">
+      <div class="summary-sheet-head">
+        <h2>${title}</h2>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeSummary()">${t('close')}</button>
+      </div>
+      <div class="summary-tools">
+        <label class="summary-toggle">
+          <input type="checkbox" ${summaryIncludeOther ? 'checked' : ''} onchange="toggleSummaryOther()">
+          <span>${otherLabel}</span>
+        </label>
+        <div class="summary-actions">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="downloadSummaryCSV()">${t('downloadCsv')}</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="printSummary()">${t('printSheet')}</button>
+        </div>
+      </div>
+      ${body}
+      <div class="summary-grand">
+        <span>${totalLabel}</span>
+        <span class="summary-grand-value"><bdi>${fmtPrice(summaryGrandTotal())}</bdi></span>
+      </div>
+    </div>`;
+}
+
+function showSummary(primary){
+  summaryPrimary = primary;
   const overlay = document.getElementById('summaryOverlay');
-  overlay.innerHTML = renderMotorSummaryHTML();
+  overlay.innerHTML = renderSummarySheet();
   overlay.classList.add('open');
 }
+
+// --- taking it away -------------------------------------------------------
+
+// Excel opens a bare comma file in the system codepage, which mangles Turkish
+// and Arabic headers, so the BOM goes in front. Any field can contain a comma
+// or a quote, so every field is quoted and inner quotes doubled.
+function csvCell(v){
+  const s = (v === null || v === undefined) ? '' : String(v);
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+
+function summaryCSVRows(){
+  const out = [];
+  for (const sec of summarySections()){
+    if (sec === 'tender'){
+      out.push([t('tender')]);
+      out.push(['#', t('selectedModel'), t('list'), t('discountRate'), t('qty'), t('net'), t('lineTotal')]);
+      summaryRows().forEach(r => out.push([r.idx+1, r.model, r.price, r.disc, r.qty, r.net, r.lineTotal]));
+    } else {
+      out.push([t('tabMotors')]);
+      out.push(['#', t('motorModel'), t('motorLength'), t('list'), t('discountRate'), t('qty'), t('net'), t('lineTotal')]);
+      motorSummaryRows().forEach(r => out.push([r.idx+1, r.code, r.len || '', r.list, r.disc ? r.disc + '%' : '', r.qty, r.net, r.lineTotal]));
+    }
+    out.push([]);
+  }
+  out.push([summarySections().length > 1 ? t('grandTotal')
+          : (summaryPrimary === 'tender' ? t('tenderTotalLabel') : t('motorsTotalLabel')),
+          summaryGrandTotal()]);
+  return out;
+}
+
+function downloadSummaryCSV(){
+  const csv = summaryCSVRows().map(row => row.map(csvCell).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'msp-' + (summarySections().length > 1 ? 'proforma' : summaryPrimary)
+             + '-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Revoked on a delay: revoking synchronously can cancel the download in
+  // some browsers before it has read the blob.
+  setTimeout(()=> URL.revokeObjectURL(url), 4000);
+  toast(t('downloaded'));
+}
+
+function printSummary(){ window.print(); }

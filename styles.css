@@ -783,3 +783,35 @@ bdi{ unicode-bidi: isolate; }
 .motor-strip-slot .price-strip .rrow-total .rmodel{
   color: var(--amber-deep); font-size:15px;
 }
+
+/* ---------- Summary sheet: toolbar, sections ---------- */
+.summary-tools{
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:10px 14px;
+  margin:-4px 0 16px; padding-bottom:14px; border-bottom:1px solid var(--line);
+}
+.summary-toggle{
+  display:flex; align-items:center; gap:8px; cursor:pointer;
+  font-size:13px; font-weight:600; color:var(--ink-soft);
+}
+.summary-toggle input{ width:17px; height:17px; accent-color: var(--navy); cursor:pointer; }
+.summary-actions{ display:flex; gap:8px; }
+
+/* Two sections on one sheet once pumps and motors are combined, so each needs
+   its own heading -- otherwise the second table reads as more rows of the
+   first, with a different column count. */
+.summary-section + .summary-section{ margin-top:22px; }
+.summary-section-head{
+  font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.9px;
+  color:var(--navy); margin:0 0 8px;
+}
+[dir="rtl"] .summary-section-head{ text-transform:none; letter-spacing:0; }
+
+/* Print is how a proforma PDF actually gets made, so the page behind the
+   overlay and the sheet's own controls come out of the printout. */
+@media print{
+  main, .social-footer{ display:none !important; }
+  .summary-tools, .summary-sheet-head .btn{ display:none !important; }
+  .summary-sheet{ padding:0; }
+  .summary-section-head{ color:#000; }
+}

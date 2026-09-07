@@ -19,6 +19,10 @@ const LANGS = {
 
 const STRINGS = {
   en: {
+    // --- Summary sheet: combined document, download, print ---
+    proformaTitle:'Proforma summary', grandTotal:'Grand total',
+    includeMotors:'Include motors', includeTender:'Include pumps',
+    downloadCsv:'Download CSV', printSheet:'Print', downloaded:'File downloaded',
     // --- Motors screen ---
     tabMotors:'Motors', noMotorLines:'No motors added yet', addMotor:'Add motor',
     motorsTotalLabel:'Motors total', motorSummaryTitle:'Motor summary',
@@ -61,6 +65,10 @@ const STRINGS = {
     motorDiscountRate:'Motor Discount Rate', pumpDiscountRate:'Pump Discount Rate'
   },
   tr: {
+    // --- Özet sayfası: birleşik belge, indirme, yazdırma ---
+    proformaTitle:'Proforma özeti', grandTotal:'Genel toplam',
+    includeMotors:'Motorları dahil et', includeTender:'Pompaları dahil et',
+    downloadCsv:'CSV indir', printSheet:'Yazdır', downloaded:'Dosya indirildi',
     // --- Motorlar ekranı ---
     tabMotors:'Motorlar', noMotorLines:'Henüz motor eklenmedi', addMotor:'Motor ekle',
     motorsTotalLabel:'Motor toplamı', motorSummaryTitle:'Motor özeti',
@@ -103,6 +111,10 @@ const STRINGS = {
     motorDiscountRate:'Motor İskontosu', pumpDiscountRate:'Pompa İskontosu'
   },
   ar: {
+    // --- صفحة الملخص: مستند موحّد، تنزيل، طباعة ---
+    proformaTitle:'ملخص الفاتورة المبدئية', grandTotal:'الإجمالي الكلي',
+    includeMotors:'تضمين المحركات', includeTender:'تضمين المضخات',
+    downloadCsv:'تنزيل CSV', printSheet:'طباعة', downloaded:'تم تنزيل الملف',
     // --- شاشة المحركات ---
     tabMotors:'المحركات', noMotorLines:'لم تُضف محركات بعد', addMotor:'إضافة محرك',
     motorsTotalLabel:'إجمالي المحركات', motorSummaryTitle:'ملخص المحركات',
@@ -145,6 +157,10 @@ const STRINGS = {
     motorDiscountRate:'نسبة خصم المحرك', pumpDiscountRate:'نسبة خصم المضخة'
   },
   es: {
+    // --- Hoja de resumen: documento combinado, descarga, impresión ---
+    proformaTitle:'Resumen proforma', grandTotal:'Total general',
+    includeMotors:'Incluir motores', includeTender:'Incluir bombas',
+    downloadCsv:'Descargar CSV', printSheet:'Imprimir', downloaded:'Archivo descargado',
     // --- Pantalla de motores ---
     tabMotors:'Motores', noMotorLines:'Aún no hay motores', addMotor:'Añadir motor',
     motorsTotalLabel:'Total motores', motorSummaryTitle:'Resumen de motores',
