@@ -904,15 +904,39 @@ bdi{ unicode-bidi: isolate; }
   text-align:center; font-weight:700; letter-spacing:.6px;
   background:var(--pf-navy); color:#fff;
 }
-/* The sheet's merged G123:I125 signature box. */
+/* The sheet's merged G123:I125 signature box. The stamp is optional (see the
+   toolbar toggle), so the box has to hold up empty as well -- it keeps its
+   height either way, leaving room to sign by hand on a printed copy. */
 .pf-sign{
-  border:1px solid #000; border-top:none; height:78px;
+  position:relative;
+  border:1px solid #000; border-top:none; min-height:96px;
   display:flex; align-items:flex-start; justify-content:flex-end;
-  padding:6px 10px; font-size:10px; color:#666;
+  padding:6px 10px;
+}
+.pf-sign-label{ font-size:10px; color:#666; }
+.pf-stamp{
+  position:absolute; left:50%; top:8px; transform:translateX(-50%);
+  width:230px; height:auto; max-width:60%;
 }
 
-/* The document is fixed English; an RTL UI must not mirror it. */
+/* The document is English or Turkish, both LTR; an RTL UI must not mirror it. */
 [dir="rtl"] .pf-doc{ direction:ltr; text-align:left; }
+
+/* Document language — which language the proforma itself is written in, which
+   is not the app's language: the UI can be Turkish while the document going to
+   the buyer is English, and the reverse. Segmented rather than a dropdown
+   because there are only two and the current one should be readable at a
+   glance before printing. */
+.pf-langpick{ display:flex; align-items:center; gap:6px; }
+.pf-langpick-label{ font-size:13px; font-weight:600; color:var(--ink-soft); }
+.pf-langbtn{
+  border:1px solid var(--line); background:var(--surface);
+  color:var(--ink-soft); font:inherit; font-size:12px; font-weight:700;
+  padding:3px 10px; border-radius:var(--radius-sm); cursor:pointer;
+}
+.pf-langbtn.active{
+  background:var(--navy); border-color:var(--navy); color:#fff;
+}
 
 @media print{
   .summary-sheet.is-proforma{ max-width:none; }
@@ -925,6 +949,7 @@ bdi{ unicode-bidi: isolate; }
      rather than showing its placeholder hint. */
   .pf-input{ display:none; }
   .pf-echo{ display:block; padding:5px 8px; word-break:break-word; }
+  .pf-stamp{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   .pf-table-wrap{ overflow:visible; }
   .pf-table thead{ display:table-header-group; }
   .pf-table tr{ break-inside:avoid; }

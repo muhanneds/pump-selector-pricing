@@ -1,4 +1,4 @@
-const CACHE_NAME = 'msp-pump-pricing-v51';
+const CACHE_NAME = 'msp-pump-pricing-v52';
 const ASSETS = [
   './',
   './index.html',
@@ -13,7 +13,8 @@ const ASSETS = [
   './app-icons/icon-512.png',
   './app-icons/icon-maskable-512.png',
   './app-icons/msp-logo-white.png',
-  './app-icons/msp-logo-letterhead.png'
+  './app-icons/msp-logo-letterhead.png',
+  './app-icons/msp-stamp.jpg'
 ];
 
 // cache.addAll() does a plain fetch per asset, which can silently reuse the

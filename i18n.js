@@ -21,6 +21,7 @@ const STRINGS = {
   en: {
     // --- Summary sheet: combined document, download, print ---
     proformaMode:'Proforma invoice', proformaInvoice:'Proforma Invoice',
+    docLanguage:'Document', stampSignature:'Stamp & signature',
     proformaTitle:'Proforma summary', grandTotal:'Grand total',
     includeMotors:'Include motors', includeTender:'Include pumps',
     downloadCsv:'Download CSV', printSheet:'Print', downloaded:'File downloaded',
@@ -68,6 +69,7 @@ const STRINGS = {
   tr: {
     // --- Özet sayfası: birleşik belge, indirme, yazdırma ---
     proformaMode:'Proforma fatura', proformaInvoice:'Proforma Fatura',
+    docLanguage:'Belge dili', stampSignature:'Kaşe ve imza',
     proformaTitle:'Proforma özeti', grandTotal:'Genel toplam',
     includeMotors:'Motorları dahil et', includeTender:'Pompaları dahil et',
     downloadCsv:'CSV indir', printSheet:'Yazdır', downloaded:'Dosya indirildi',
@@ -115,6 +117,7 @@ const STRINGS = {
   ar: {
     // --- صفحة الملخص: مستند موحّد، تنزيل، طباعة ---
     proformaMode:'فاتورة مبدئية', proformaInvoice:'الفاتورة المبدئية',
+    docLanguage:'لغة المستند', stampSignature:'الختم والتوقيع',
     proformaTitle:'ملخص الفاتورة المبدئية', grandTotal:'الإجمالي الكلي',
     includeMotors:'تضمين المحركات', includeTender:'تضمين المضخات',
     downloadCsv:'تنزيل CSV', printSheet:'طباعة', downloaded:'تم تنزيل الملف',
@@ -162,6 +165,7 @@ const STRINGS = {
   es: {
     // --- Hoja de resumen: documento combinado, descarga, impresión ---
     proformaMode:'Factura proforma', proformaInvoice:'Factura Proforma',
+    docLanguage:'Documento', stampSignature:'Sello y firma',
     proformaTitle:'Resumen proforma', grandTotal:'Total general',
     includeMotors:'Incluir motores', includeTender:'Incluir bombas',
     downloadCsv:'Descargar CSV', printSheet:'Imprimir', downloaded:'Archivo descargado',

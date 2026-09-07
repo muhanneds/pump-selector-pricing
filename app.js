@@ -1253,6 +1253,18 @@ function renderSummarySheet(){
           <input type="checkbox" ${proformaMode ? 'checked' : ''} onchange="toggleProformaMode()">
           <span>${t('proformaMode')}</span>
         </label>
+        ${proformaMode ? `
+        <div class="pf-langpick" role="group" aria-label="${t('docLanguage')}">
+          <span class="pf-langpick-label">${t('docLanguage')}</span>
+          <button type="button" class="pf-langbtn${proformaLang==='en' ? ' active' : ''}"
+                  onclick="setProformaLang('en')">EN</button>
+          <button type="button" class="pf-langbtn${proformaLang==='tr' ? ' active' : ''}"
+                  onclick="setProformaLang('tr')">TR</button>
+        </div>
+        <label class="summary-toggle">
+          <input type="checkbox" ${proformaStamp ? 'checked' : ''} onchange="toggleProformaStamp()">
+          <span>${t('stampSignature')}</span>
+        </label>` : ''}
         <div class="summary-actions">
           <button type="button" class="btn btn-ghost btn-sm" onclick="downloadSummaryCSV()">${t('downloadCsv')}</button>
           <button type="button" class="btn btn-primary btn-sm" onclick="printSummary()">${t('printSheet')}</button>
@@ -1306,7 +1318,10 @@ function downloadSummaryCSV(){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'msp-' + (proformaMode ? 'proforma-invoice'
+  // The English and Turkish copies are two files of the same proforma, so the
+  // document's language goes in the name -- otherwise the second export lands
+  // as "(1)" and the two are told apart only by opening them.
+  a.download = 'msp-' + (proformaMode ? 'proforma-invoice-' + proformaLang
              : (summarySections().length > 1 ? 'proforma' : summaryPrimary))
              + '-' + new Date().toISOString().slice(0,10) + '.csv';
   document.body.appendChild(a);
@@ -1337,44 +1352,133 @@ function printSummary(){ window.print(); }
 // in English regardless of who is being quoted; only the app's own controls
 // around it follow the UI language.
 // ---------------------------------------------------------------------------
-const STORE_KEY_PROFORMA_MODE = 'msp_proforma_mode_v1';
-const STORE_KEY_PROFORMA_DOC  = 'msp_proforma_doc_v1';
+const STORE_KEY_PROFORMA_MODE  = 'msp_proforma_mode_v1';
+const STORE_KEY_PROFORMA_DOC   = 'msp_proforma_doc_v1';
+const STORE_KEY_PROFORMA_LANG  = 'msp_proforma_lang_v1';
+const STORE_KEY_PROFORMA_STAMP = 'msp_proforma_stamp_v1';
 
-// Rows 1-6 and 113-127 of the PI sheet: the parts that are the same on every
-// proforma MSP issues. Kept verbatim, including the bank details.
+// The document's own language, separate from the app's. A Turkish-speaking
+// user still sends English proformas to most markets, and an English-speaking
+// one still needs a Turkish copy for the customs file here, so the two cannot
+// be the same setting. Only the words are translated: product codes, model
+// names, Incoterms, HS codes, SWIFT/IBAN and the figures are the same on both
+// copies, because they are what the buyer's bank and customs match on.
+const PF_TEXT = {
+  en: {
+    title: 'PROFORMA INVOICE',
+    description: 'DESCRIPTION: BRAND NEW PUMP AND MOTOR SET, SUBMERSIBLE TYPE',
+    applicant: 'Applicant:', applicantAdd: 'Applicant Add. :',
+    beneficiary: 'Beneficiary:', beneficiaryAdd: 'Beneficiary Add. :',
+    tel: 'Tel:', email: 'E-Mail:',
+    piNo: 'Proforma I. No:', date: 'Date',
+    buyerName: 'Buyer name', buyerAddress: 'Buyer address',
+    colNo: 'No.', colQ: 'Q m³/ hour', colHm: 'Hm', colSuction: 'Suction / NEMA',
+    colCode: 'Product Code', colDesc: 'Product Description', colQty: 'Qty',
+    colUnit: 'Unit<br>Price', colTotal: 'Total<br>Price',
+    colUnitFlat: 'Unit Price', colTotalFlat: 'Total Price',
+    total: 'TOTAL', noLines: 'No priced lines yet',
+    paymentTerm: 'Payment Term', deliveryTime: 'Delivery Time', origin: 'Origin',
+    shipmentTerms: 'Shipment Terms', hsCode: 'HS Code', packing: 'Packing',
+    brandName: 'Brand Name',
+    bankInfo: 'BANK INFORMATION', bank: 'BANK', branch: 'BRANCH',
+    swift: 'SWIFT', iban: 'IBAN',
+    bankBeneficiary: 'Beneficiary', bankBeneficiaryAdd: 'Beneficiary Add.',
+    originCaps: 'ORIGIN', stampSign: 'Stamp & Signature',
+    // Values that are words rather than codes.
+    vOrigin: 'Turkey',
+    vPacking: 'Standard Wooden Box / Cardboard Box',
+    vHsCode: 'Subm. Pump: 8413702900. Sub. Motor: 8501522090; 8501523090; 8501529090',
+    vPaymentTerm: '%40 Advance Payment TT, %60 TT Before Shipment',
+    vDeliveryTime: '8-10 Weeks',
+    // Pieces the product description is assembled from.
+    dPump: 'Submersible pump', dMotor: 'submersible motor',
+    dMotorAlone: 'Submersible motor', dStage: 'stage',
+    mat: { 'Cast Iron':'Cast Iron', 'Noryl':'Noryl', 'Stainless Steel':'Stainless Steel' }
+  },
+  tr: {
+    title: 'PROFORMA FATURA',
+    description: 'AÇIKLAMA: SIFIR POMPA VE MOTOR TAKIMI, DALGIÇ TİP',
+    applicant: 'Alıcı:', applicantAdd: 'Alıcı Adresi :',
+    beneficiary: 'Satıcı:', beneficiaryAdd: 'Satıcı Adresi :',
+    tel: 'Tel:', email: 'E-Posta:',
+    piNo: 'Proforma Fatura No:', date: 'Tarih',
+    buyerName: 'Alıcı adı', buyerAddress: 'Alıcı adresi',
+    colNo: 'No.', colQ: 'Q m³/ saat', colHm: 'Hm', colSuction: 'Emme / NEMA',
+    colCode: 'Ürün Kodu', colDesc: 'Ürün Açıklaması', colQty: 'Adet',
+    colUnit: 'Birim<br>Fiyat', colTotal: 'Toplam<br>Fiyat',
+    colUnitFlat: 'Birim Fiyat', colTotalFlat: 'Toplam Fiyat',
+    total: 'TOPLAM', noLines: 'Henüz fiyatlı satır yok',
+    paymentTerm: 'Ödeme Şekli', deliveryTime: 'Teslim Süresi', origin: 'Menşei',
+    shipmentTerms: 'Teslim Şekli', hsCode: 'GTİP Kodu', packing: 'Ambalaj',
+    brandName: 'Marka',
+    bankInfo: 'BANKA BİLGİLERİ', bank: 'BANKA', branch: 'ŞUBE',
+    swift: 'SWIFT', iban: 'IBAN',
+    bankBeneficiary: 'Lehtar', bankBeneficiaryAdd: 'Lehtar Adresi',
+    originCaps: 'MENŞEİ', stampSign: 'Kaşe ve İmza',
+    vOrigin: 'Türkiye',
+    vPacking: 'Standart Ahşap Kasa / Karton Kutu',
+    vHsCode: 'Dalgıç Pompa: 8413702900. Dalgıç Motor: 8501522090; 8501523090; 8501529090',
+    vPaymentTerm: '%40 Peşin TT, %60 Sevkiyat Öncesi TT',
+    vDeliveryTime: '8-10 Hafta',
+    dPump: 'Dalgıç pompa', dMotor: 'dalgıç motor',
+    dMotorAlone: 'Dalgıç motor', dStage: 'kademe',
+    mat: { 'Cast Iron':'Döküm', 'Noryl':'Noryl', 'Stainless Steel':'Paslanmaz Çelik' }
+  }
+};
+
+// Rows 1-6 and 117-127 of the PI sheet: what is identical on every proforma
+// and in both languages. Addresses, HS codes and bank details are transcribed
+// on the buyer's side exactly as printed, so they are never translated.
 const PF_FIXED = {
   letterhead: 'MSP TEKNIK MAKINA SAN. TIC. A.S. // Address: Org. San. Bölgesi 7. Sok No: 1/3 Nevsehir / Turkey  Tel: +90 384 242 92 90  Fax: +90 384 242 92 91',
   beneficiary: 'MSP TEKNIK MAKINA SAN. TIC. A.S.',
   beneficiaryAdd: 'OSB 7. Sok NO:1/3 NEVSEHIR TURKEY  Tel: 0090 384 242 9290',
-  description: 'DESCRIPTION: BRAND NEW PUMP AND MOTOR SET, SUBMERSIBLE TYPE',
-  origin: 'Turkey',
-  hsCode: 'Subm. Pump: 8413702900. Sub. Motor: 8501522090; 8501523090; 8501529090',
-  packing: 'Standard Wooden Box / Cardboard Box',
   brand: 'MSP',
   bank: 'VAKIFLAR BANKASI TAO',
   branch: '',
   swift: 'TVBATR2A',
-  iban: 'TR76 0001 5001 5804 8018 6074 59'
-};
-
-// Rows 3-9 and 113-116: what changes per quotation. Defaults are the sheet's
-// own standing terms, which is what most proformas go out with.
-const PF_DEFAULTS = {
-  applicant: '', applicantAdd: '', tel: '', email: '',
-  piNo: '', date: '',
-  paymentTerm: '%40 Advance Payment TT, %60 TT Before Shipment',
-  deliveryTime: '8-10 Weeks',
+  iban: 'TR76 0001 5001 5804 8018 6074 59',
   shipmentTerms: 'EXW'
 };
 
-let proformaMode = loadProformaMode();
+// Rows 3-9 and 113-116: what changes per quotation.
+const PF_DEFAULTS = {
+  applicant: '', applicantAdd: '', tel: '', email: '',
+  piNo: '', date: '',
+  paymentTerm: '', deliveryTime: '', shipmentTerms: PF_FIXED.shipmentTerms
+};
+
+let proformaMode  = loadProformaMode();
+let proformaLang  = loadProformaLang();
+let proformaStamp = loadProformaStamp();
 let pfDoc = loadProformaDoc();
+
+function pfT(){ return PF_TEXT[proformaLang] || PF_TEXT.en; }
 
 function loadProformaMode(){
   try{ return localStorage.getItem(STORE_KEY_PROFORMA_MODE) === '1'; }catch(e){ return false; }
 }
 function saveProformaMode(){
   try{ localStorage.setItem(STORE_KEY_PROFORMA_MODE, proformaMode ? '1' : '0'); }catch(e){}
+}
+// Until the document's language is set explicitly it follows the app's, but
+// only where the document has that language -- Arabic and Spanish users get
+// the English copy, which is what those markets are quoted in anyway.
+function loadProformaLang(){
+  try{
+    const v = localStorage.getItem(STORE_KEY_PROFORMA_LANG);
+    if (v === 'en' || v === 'tr') return v;
+  }catch(e){}
+  return (typeof lang !== 'undefined' && lang === 'tr') ? 'tr' : 'en';
+}
+function saveProformaLang(){
+  try{ localStorage.setItem(STORE_KEY_PROFORMA_LANG, proformaLang); }catch(e){}
+}
+function loadProformaStamp(){
+  try{ return localStorage.getItem(STORE_KEY_PROFORMA_STAMP) === '1'; }catch(e){ return false; }
+}
+function saveProformaStamp(){
+  try{ localStorage.setItem(STORE_KEY_PROFORMA_STAMP, proformaStamp ? '1' : '0'); }catch(e){}
 }
 function loadProformaDoc(){
   const doc = Object.assign({}, PF_DEFAULTS);
@@ -1385,6 +1489,9 @@ function loadProformaDoc(){
   // An unset date reads as today rather than blank: a proforma is always dated
   // the day it is issued, and a blank date on a printed page is a defect.
   if (!doc.date) doc.date = new Date().toISOString().slice(0,10);
+  // The standing terms start in the document's language.
+  if (!doc.paymentTerm)  doc.paymentTerm  = pfT().vPaymentTerm;
+  if (!doc.deliveryTime) doc.deliveryTime = pfT().vDeliveryTime;
   return doc;
 }
 function saveProformaDoc(){
@@ -1396,16 +1503,35 @@ function setProformaField(key, value){
   pfDoc[key] = value;
   saveProformaDoc();
 }
+function toggleProformaMode(){
+  proformaMode = !proformaMode;
+  saveProformaMode();
+  showSummary(summaryPrimary);
+}
+function toggleProformaStamp(){
+  proformaStamp = !proformaStamp;
+  saveProformaStamp();
+  showSummary(summaryPrimary);
+}
+// Switching the document's language moves the standing terms with it, but
+// only while they still read as a standing term -- anything typed over them
+// is the user's own wording and survives the switch untouched.
+function setProformaLang(next){
+  if (next !== 'en' && next !== 'tr') return;
+  const from = PF_TEXT[proformaLang], to = PF_TEXT[next];
+  if (pfDoc.paymentTerm  === from.vPaymentTerm)  pfDoc.paymentTerm  = to.vPaymentTerm;
+  if (pfDoc.deliveryTime === from.vDeliveryTime) pfDoc.deliveryTime = to.vDeliveryTime;
+  proformaLang = next;
+  saveProformaLang();
+  saveProformaDoc();
+  showSummary(summaryPrimary);
+}
+
 // Keeps a field's print twin in step with what is being typed, without a
 // re-render (which would move the caret).
 function pfEcho(input){
   const echo = input.nextElementSibling;
   if (echo && echo.classList.contains('pf-echo')) echo.textContent = input.value;
-}
-function toggleProformaMode(){
-  proformaMode = !proformaMode;
-  saveProformaMode();
-  showSummary(summaryPrimary);
 }
 
 // Anything the user typed lands in an HTML attribute, so it has to be escaped.
@@ -1435,6 +1561,7 @@ const PF_BORE_LABEL = { '4only': '4"', '6plus': '6"', 'any': '' };
 
 function proformaLines(){
   const out = [];
+  const T = pfT();
   for (const sec of summarySections()){
     if (sec === 'tender'){
       tenderLines.forEach(line => {
@@ -1448,12 +1575,14 @@ function proformaLines(){
         const disc = Number(line.discount)||0;
         const motorDisc = Number(line.motorDiscount)||0;
         const unit = m.price * (100-disc)/100 + (motor ? motor.price * (100-motorDisc)/100 : 0);
-        const bits = [line.material, line.frequency];
-        if (r.primary.stages) bits.push(r.primary.stages + ' stage');
+        // Words come from the document's language; the frequency, kW/HP and
+        // millimetre figures are units, the same in both.
+        const bits = [T.mat[line.material] || line.material, line.frequency];
+        if (r.primary.stages) bits.push(r.primary.stages + ' ' + T.dStage);
         if (m.kw != null) bits.push(m.kw + ' kW / ' + m.hp + ' HP');
         if (m.len) bits.push('L ' + m.len + ' mm');
-        let desc = 'Submersible pump, ' + bits.join(', ');
-        if (motor) desc += ' + submersible motor ' + line.motorCode.trim()
+        let desc = T.dPump + ', ' + bits.join(', ');
+        if (motor) desc += ' + ' + T.dMotor + ' ' + line.motorCode.trim()
                         + ' (' + motor.size + (motor.len ? ', L ' + motor.len + ' mm' : '') + ')';
         out.push({
           q: pfNum(Q), hm: pfNum(H),
@@ -1469,7 +1598,7 @@ function proformaLines(){
         out.push({
           q: '', hm: '', suction: tot.motor.size,
           code: (line.code||'').trim(),
-          desc: 'Submersible motor' + (tot.motor.len ? ', L ' + tot.motor.len + ' mm' : ''),
+          desc: T.dMotorAlone + (tot.motor.len ? ', L ' + tot.motor.len + ' mm' : ''),
           qty: tot.qty, unit: tot.net, total: tot.lineTotal
         });
       });
@@ -1487,6 +1616,7 @@ function proformaTotal(){
 // Header, terms and bank rows are all the sheet's label-left / value-right
 // pair, so they share one builder. `key` makes the value an editable field;
 // without it the value is fixed text.
+//
 // An <input> shows only what fits its box, so a long buyer address would print
 // truncated. Editable rows therefore carry the value twice: the field for the
 // screen, and a plain span that wraps, which is the one print shows.
@@ -1501,6 +1631,7 @@ function pfRow(label, value, key, placeholder){
 }
 
 function proformaHTML(){
+  const T = pfT();
   const rows = proformaLines();
   const body = rows.map(function(r, i){ return `
     <tr>
@@ -1516,42 +1647,44 @@ function proformaHTML(){
     </tr>`; }).join('');
 
   return `
-  <div class="pf-doc" dir="ltr">
+  <div class="pf-doc" dir="ltr" lang="${proformaLang}">
     <div class="pf-letterhead">
       <div class="pf-letterhead-text">${esc(PF_FIXED.letterhead)}</div>
       <img class="pf-logo" src="app-icons/msp-logo-letterhead.png" alt="MSP">
     </div>
-    <h1 class="pf-title">PROFORMA INVOICE</h1>
+    <h1 class="pf-title">${esc(T.title)}</h1>
 
     <div class="pf-block">
-      ${pfRow('Applicant:', pfDoc.applicant, 'applicant', 'Buyer name')}
-      ${pfRow('Applicant Add. :', pfDoc.applicantAdd, 'applicantAdd', 'Buyer address')}
-      ${pfRow('Beneficiary:', PF_FIXED.beneficiary)}
-      ${pfRow('Beneficiary Add. :', PF_FIXED.beneficiaryAdd)}
-      ${pfRow('Tel:', pfDoc.tel, 'tel')}
-      ${pfRow('E-Mail:', pfDoc.email, 'email')}
+      ${pfRow(T.applicant, pfDoc.applicant, 'applicant', T.buyerName)}
+      ${pfRow(T.applicantAdd, pfDoc.applicantAdd, 'applicantAdd', T.buyerAddress)}
+      ${pfRow(T.beneficiary, PF_FIXED.beneficiary)}
+      ${pfRow(T.beneficiaryAdd, PF_FIXED.beneficiaryAdd)}
+      ${pfRow(T.tel, pfDoc.tel, 'tel')}
+      ${pfRow(T.email, pfDoc.email, 'email')}
       <div class="pf-row pf-row-split">
-        <div class="pf-label">Proforma I. No:</div>
+        <div class="pf-label">${esc(T.piNo)}</div>
         <div class="pf-value"><input class="pf-input" type="text" value="${esc(pfDoc.piNo)}"
-             placeholder="68858-260000" oninput="setProformaField('piNo', this.value)"></div>
-        <div class="pf-label pf-label-date">Date</div>
+             placeholder="68858-260000" oninput="setProformaField('piNo', this.value); pfEcho(this)"
+             ><span class="pf-echo">${esc(pfDoc.piNo)}</span></div>
+        <div class="pf-label pf-label-date">${esc(T.date)}</div>
         <div class="pf-value pf-value-date"><input class="pf-input" type="date" value="${esc(pfDoc.date)}"
-             oninput="setProformaField('date', this.value)"></div>
+             oninput="setProformaField('date', this.value); pfEcho(this)"
+             ><span class="pf-echo">${esc(pfDoc.date)}</span></div>
       </div>
     </div>
 
-    <div class="pf-description">${esc(PF_FIXED.description)}</div>
+    <div class="pf-description">${esc(T.description)}</div>
 
     <div class="pf-table-wrap">
       <table class="pf-table">
         <thead><tr>
-          <th>No.</th><th>Q m³/ hour</th><th>Hm</th><th>Suction / NEMA</th>
-          <th>Product Code</th><th>Product Description</th>
-          <th>Qty</th><th>Unit<br>Price</th><th>Total<br>Price</th>
+          <th>${esc(T.colNo)}</th><th>${esc(T.colQ)}</th><th>${esc(T.colHm)}</th>
+          <th>${esc(T.colSuction)}</th><th>${esc(T.colCode)}</th><th>${esc(T.colDesc)}</th>
+          <th>${esc(T.colQty)}</th><th>${T.colUnit}</th><th>${T.colTotal}</th>
         </tr></thead>
-        <tbody>${body || '<tr><td colspan="9" class="pf-empty">No priced lines yet</td></tr>'}</tbody>
+        <tbody>${body || `<tr><td colspan="9" class="pf-empty">${esc(T.noLines)}</td></tr>`}</tbody>
         <tfoot><tr>
-          <td colspan="7" class="pf-total-label">TOTAL</td>
+          <td colspan="7" class="pf-total-label">${esc(T.total)}</td>
           <td class="pf-n"></td>
           <td class="pf-n pf-total-value">${pfMoney(proformaTotal())}</td>
         </tr></tfoot>
@@ -1559,66 +1692,73 @@ function proformaHTML(){
     </div>
 
     <div class="pf-block">
-      ${pfRow('Payment Term', pfDoc.paymentTerm, 'paymentTerm')}
-      ${pfRow('Delivery Time', pfDoc.deliveryTime, 'deliveryTime')}
-      ${pfRow('Origin', PF_FIXED.origin)}
-      ${pfRow('Shipment Terms', pfDoc.shipmentTerms, 'shipmentTerms')}
-      ${pfRow('HS Code', PF_FIXED.hsCode)}
-      ${pfRow('Packing', PF_FIXED.packing)}
-      ${pfRow('Brand Name', PF_FIXED.brand)}
+      ${pfRow(T.paymentTerm, pfDoc.paymentTerm, 'paymentTerm')}
+      ${pfRow(T.deliveryTime, pfDoc.deliveryTime, 'deliveryTime')}
+      ${pfRow(T.origin, T.vOrigin)}
+      ${pfRow(T.shipmentTerms, pfDoc.shipmentTerms, 'shipmentTerms')}
+      ${pfRow(T.hsCode, T.vHsCode)}
+      ${pfRow(T.packing, T.vPacking)}
+      ${pfRow(T.brandName, PF_FIXED.brand)}
     </div>
 
-    <div class="pf-bank-head">BANK INFORMATION</div>
+    <div class="pf-bank-head">${esc(T.bankInfo)}</div>
     <div class="pf-block">
-      ${pfRow('BANK', PF_FIXED.bank)}
-      ${pfRow('BRANCH', PF_FIXED.branch)}
-      ${pfRow('SWIFT', PF_FIXED.swift)}
-      ${pfRow('IBAN', PF_FIXED.iban)}
-      ${pfRow('Beneficiary', PF_FIXED.beneficiary)}
-      ${pfRow('Beneficiary Add.', PF_FIXED.beneficiaryAdd)}
-      ${pfRow('ORIGIN', PF_FIXED.origin)}
+      ${pfRow(T.bank, PF_FIXED.bank)}
+      ${pfRow(T.branch, PF_FIXED.branch)}
+      ${pfRow(T.swift, PF_FIXED.swift)}
+      ${pfRow(T.iban, PF_FIXED.iban)}
+      ${pfRow(T.bankBeneficiary, PF_FIXED.beneficiary)}
+      ${pfRow(T.bankBeneficiaryAdd, PF_FIXED.beneficiaryAdd)}
+      ${pfRow(T.originCaps, T.vOrigin)}
     </div>
 
-    <div class="pf-sign"><span>Stamp &amp; Signature</span></div>
+    <div class="pf-sign">
+      ${proformaStamp ? '<img class="pf-stamp" src="app-icons/msp-stamp.jpg" alt="">' : ''}
+      <span class="pf-sign-label">${esc(T.stampSign)}</span>
+    </div>
   </div>`;
 }
 
 // The proforma leaves as a CSV shaped like the PI sheet itself — label/value
 // rows down the left, the nine columns in the middle — so it lands in Excel
-// close enough to the workbook to be pasted straight into it.
+// close enough to the workbook to be pasted straight into it. It carries the
+// document's language, not the app's, for the same reason the printed page
+// does: the two copies have to say the same thing.
 function proformaCSVRows(){
+  const T = pfT();
   const out = [];
   out.push([PF_FIXED.letterhead]);
-  out.push(['PROFORMA INVOICE']);
+  out.push([T.title]);
   out.push([]);
-  out.push(['Applicant:', pfDoc.applicant]);
-  out.push(['Applicant Add. :', pfDoc.applicantAdd]);
-  out.push(['Beneficiary:', PF_FIXED.beneficiary]);
-  out.push(['Beneficiary Add. :', PF_FIXED.beneficiaryAdd]);
-  out.push(['Tel:', pfDoc.tel]);
-  out.push(['E-Mail:', pfDoc.email]);
-  out.push(['Proforma I. No:', pfDoc.piNo, '', '', '', '', 'Date', pfDoc.date]);
-  out.push([PF_FIXED.description]);
-  out.push(['No.','Q m³/ hour','Hm','Suction / NEMA','Product Code','Product Description','Qty','Unit Price','Total Price']);
+  out.push([T.applicant, pfDoc.applicant]);
+  out.push([T.applicantAdd, pfDoc.applicantAdd]);
+  out.push([T.beneficiary, PF_FIXED.beneficiary]);
+  out.push([T.beneficiaryAdd, PF_FIXED.beneficiaryAdd]);
+  out.push([T.tel, pfDoc.tel]);
+  out.push([T.email, pfDoc.email]);
+  out.push([T.piNo, pfDoc.piNo, '', '', '', '', T.date, pfDoc.date]);
+  out.push([T.description]);
+  out.push([T.colNo, T.colQ, T.colHm, T.colSuction, T.colCode, T.colDesc,
+            T.colQty, T.colUnitFlat, T.colTotalFlat]);
   proformaLines().forEach(function(r,i){ out.push([i+1, r.q, r.hm, r.suction, r.code, r.desc, r.qty, r.unit, r.total]); });
-  out.push(['','','','','','','TOTAL','', proformaTotal()]);
+  out.push(['','','','','','', T.total, '', proformaTotal()]);
   out.push([]);
-  out.push(['Payment Term', pfDoc.paymentTerm]);
-  out.push(['Delivery Time', pfDoc.deliveryTime]);
-  out.push(['Origin', PF_FIXED.origin]);
-  out.push(['Shipment Terms', pfDoc.shipmentTerms]);
-  out.push(['HS Code', PF_FIXED.hsCode]);
-  out.push(['Packing', PF_FIXED.packing]);
-  out.push(['Brand Name', PF_FIXED.brand]);
+  out.push([T.paymentTerm, pfDoc.paymentTerm]);
+  out.push([T.deliveryTime, pfDoc.deliveryTime]);
+  out.push([T.origin, T.vOrigin]);
+  out.push([T.shipmentTerms, pfDoc.shipmentTerms]);
+  out.push([T.hsCode, T.vHsCode]);
+  out.push([T.packing, T.vPacking]);
+  out.push([T.brandName, PF_FIXED.brand]);
   out.push([]);
-  out.push(['BANK INFORMATION']);
-  out.push(['BANK', PF_FIXED.bank]);
-  out.push(['BRANCH', PF_FIXED.branch]);
-  out.push(['SWIFT', PF_FIXED.swift]);
-  out.push(['IBAN', PF_FIXED.iban]);
-  out.push(['Beneficiary', PF_FIXED.beneficiary]);
-  out.push(['Beneficiary Add.', PF_FIXED.beneficiaryAdd]);
-  out.push(['ORIGIN', PF_FIXED.origin]);
+  out.push([T.bankInfo]);
+  out.push([T.bank, PF_FIXED.bank]);
+  out.push([T.branch, PF_FIXED.branch]);
+  out.push([T.swift, PF_FIXED.swift]);
+  out.push([T.iban, PF_FIXED.iban]);
+  out.push([T.bankBeneficiary, PF_FIXED.beneficiary]);
+  out.push([T.bankBeneficiaryAdd, PF_FIXED.beneficiaryAdd]);
+  out.push([T.originCaps, T.vOrigin]);
   return out;
 }
 
