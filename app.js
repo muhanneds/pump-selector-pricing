@@ -577,10 +577,81 @@ function renderInPlaceSelector(){
 // ---------------------------------------------------------------------------
 // Tender rendering
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Customer details — the buyer's side of the proforma, entered once on Tender
+// rather than typed into the document.
+//
+// These fields belong to the quotation, not to the sheet: they are the same
+// whether the summary or the proforma is showing, and a document is a bad
+// place to type into (the fields have to be wide enough to print, which is
+// not the same as wide enough to edit on a phone). They live in a collapsed
+// panel above the lines, and the proforma renders them as finished text.
+// ---------------------------------------------------------------------------
+let customerOpen = false;
+function toggleCustomer(){
+  customerOpen = !customerOpen;
+  render();
+}
+
+// Typing writes straight through and leaves the DOM alone -- a re-render on
+// each keystroke would move the caret. Only the collapsed summary line needs
+// refreshing, and it is not on screen while a field has focus.
+function customerField(key, label, placeholder, type){
+  return `<label class="cust-field">
+    <span class="cust-label">${esc(label)}</span>
+    <input type="${type || 'text'}" value="${esc(pfDoc[key] || '')}"
+           placeholder="${esc(placeholder || '')}"
+           oninput="setProformaField('${key}', this.value)">
+  </label>`;
+}
+
+// What the collapsed header says: the buyer, then the PI number if there is
+// one. With neither, it invites the tap instead of showing an empty line.
+function customerMeta(){
+  const bits = [];
+  if ((pfDoc.applicant || '').trim()) bits.push(pfDoc.applicant.trim());
+  if ((pfDoc.piNo || '').trim()) bits.push(pfDoc.piNo.trim());
+  return bits.length ? bits.join(' · ') : t('custEmpty');
+}
+
+function renderCustomerHTML(){
+  const filled = !!(pfDoc.applicant || '').trim();
+  return `<div class="card sec cust${customerOpen ? ' open' : ''}">
+    <div class="sec-head">
+      <button type="button" class="sec-toggle" onclick="toggleCustomer()">
+        <span class="sec-title">${t('custDetails')}</span>
+        <span class="sec-meta${filled ? '' : ' sec-meta-empty'}">${esc(customerMeta())}</span>
+      </button>
+      <button type="button" class="sec-caret-btn" onclick="toggleCustomer()" aria-label="${t('custDetails')}">
+        <span class="caret">${customerOpen ? '▴' : '▾'}</span>
+      </button>
+    </div>
+    ${customerOpen ? `<div class="sec-body">
+      ${customerField('applicant', t('custApplicant'), t('custApplicantPh'))}
+      ${customerField('applicantAdd', t('custAddress'), t('custAddressPh'))}
+      <div class="cust-2">
+        ${customerField('tel', t('custTel'), '', 'tel')}
+        ${customerField('email', t('custEmail'), '', 'email')}
+      </div>
+      <div class="cust-2">
+        ${customerField('piNo', t('custPiNo'), '68858-260000')}
+        ${customerField('date', t('custDate'), '', 'date')}
+      </div>
+      <div class="cust-sub">${t('custTerms')}</div>
+      ${customerField('paymentTerm', t('custPayment'), '')}
+      <div class="cust-2">
+        ${customerField('deliveryTime', t('custDelivery'), '')}
+        ${customerField('shipmentTerms', t('custShipment'), '')}
+      </div>
+    </div>` : ''}
+  </div>`;
+}
+
 function renderTenderHTML(){
   if (tenderLines.length === 0){
     return `
       <div class="tender-header"><h2>${t('tender')}</h2><span class="tender-count">${tn('lines', 0)}</span></div>
+      ${renderCustomerHTML()}
       <div class="empty">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg>
         <p>${t('noLines')}</p>
@@ -593,6 +664,7 @@ function renderTenderHTML(){
   const lines = tenderLines.map((line, idx) => renderLineCard(line, idx)).join('');
   return `
     <div class="tender-header"><h2>${t('tender')}</h2><span class="tender-count">${tn('lines', tenderLines.length)}</span></div>
+    ${renderCustomerHTML()}
     <div id="tenderTotalSlot">${renderTenderTotalHTML()}</div>
     ${lines}
     <button class="btn btn-primary btn-block" onclick="addLine()">${t('addLine')}</button>
@@ -1154,58 +1226,76 @@ function summarySections(){
   return summaryIncludeOther ? [summaryPrimary, other] : [summaryPrimary];
 }
 
+// The summary is a report, not a document: it is read on a phone, by the
+// person who built the quotation, to check it. The nine-column table the
+// proforma needs does not fit that screen -- it scrolls sideways and the
+// totals fall off the edge -- so the summary follows the route report's
+// shape instead: a headline figure, tiles for the counts, and one row per
+// line that wraps rather than scrolls.
+function summaryStats(){
+  const pumps = summaryRows(), motors = motorSummaryRows();
+  const secs = summarySections();
+  const rows = (secs.includes('tender') ? pumps : []).concat(secs.includes('motors') ? motors : []);
+  let units = 0, list = 0, net = 0;
+  rows.forEach(r => { units += r.qty; list += (r.price != null ? r.price : r.list) * r.qty; net += r.lineTotal; });
+  return { lines: rows.length, units, list, net, saved: list - net,
+           pct: list > 0 ? Math.round((1 - net/list) * 100) : 0 };
+}
+
+function summaryKPIsHTML(){
+  const st = summaryStats();
+  const kpi = (v, l) => `<div class="kpi"><div class="kpi-v"><bdi>${v}</bdi></div><div class="kpi-l">${esc(l)}</div></div>`;
+  return `
+    <div class="headline">
+      <div class="headline-v"><bdi>${fmtPrice(st.net)}</bdi></div>
+      <div class="headline-l">${summarySections().length > 1 ? t('grandTotal')
+        : (summaryPrimary === 'tender' ? t('tenderTotalLabel') : t('motorsTotalLabel'))}</div>
+    </div>
+    <div class="kpi-grid kpi-grid-4">
+      ${kpi(st.lines, t('kpiLines'))}
+      ${kpi(st.units, t('kpiUnits'))}
+      ${kpi(fmtPrice(st.list), t('list'))}
+      ${kpi(st.pct + '%', t('kpiSaved'))}
+    </div>`;
+}
+
+// One row per line: index, what it is, and what it comes to. Everything that
+// does not fit on a phone goes in the sub-line, which wraps.
+function summaryRowHTML(idx, code, sub, amount){
+  return `<div class="sum-row">
+    <div class="sum-idx">${idx}</div>
+    <div class="sum-main">
+      <div class="sum-code"><bdi>${esc(code)}</bdi></div>
+      <div class="sum-sub">${esc(sub)}</div>
+    </div>
+    <div class="sum-amt"><bdi>${fmtPrice(amount)}</bdi></div>
+  </div>`;
+}
+
 function pumpSectionHTML(){
   const rows = summaryRows();
-  const body = rows.map(r => `
-    <tr>
-      <td>${r.idx+1}</td>
-      <td><bdi>${r.model}</bdi></td>
-      <td><bdi>${fmtPrice(r.price)}</bdi></td>
-      <td>${r.disc==='0%' ? '—' : '<bdi>'+r.disc+'</bdi>'}</td>
-      <td><bdi>${r.qty}</bdi></td>
-      <td><bdi>${fmtPrice(r.net)}</bdi></td>
-      <td><bdi>${fmtPrice(r.lineTotal)}</bdi></td>
-    </tr>`).join('');
+  const body = rows.map(r => summaryRowHTML(
+    r.idx + 1, r.model,
+    `×${r.qty} · ${r.disc} · ${fmtPrice(r.net)} ${t('net').toLowerCase()}`,
+    r.lineTotal)).join('');
   return `
     <div class="summary-section">
       <h3 class="summary-section-head">${t('tender')}</h3>
-      <div class="summary-table-wrap">
-        <table class="summary-table">
-          <thead><tr>
-            <th>#</th><th>${t('selectedModel')}</th>
-            <th>${t('list')}</th><th>${t('discountRate')}</th><th>${t('qty')}</th><th>${t('net')}</th><th>${t('lineTotal')}</th>
-          </tr></thead>
-          <tbody>${body || `<tr><td colspan="7" class="summary-empty">${t('noLines')}</td></tr>`}</tbody>
-        </table>
-      </div>
+      <div class="sum-rows">${body || `<div class="summary-empty">${t('noLines')}</div>`}</div>
     </div>`;
 }
 
 function motorSectionHTML(){
   const rows = motorSummaryRows();
-  const body = rows.map(r => `
-    <tr>
-      <td>${r.idx+1}</td>
-      <td><bdi>${r.code}</bdi></td>
-      <td><bdi>${r.len ? r.len + ' mm' : '—'}</bdi></td>
-      <td><bdi>${fmtPrice(r.list)}</bdi></td>
-      <td>${r.disc ? '<bdi>'+r.disc+'%</bdi>' : '—'}</td>
-      <td><bdi>${r.qty}</bdi></td>
-      <td><bdi>${fmtPrice(r.net)}</bdi></td>
-      <td><bdi>${fmtPrice(r.lineTotal)}</bdi></td>
-    </tr>`).join('');
+  const body = rows.map(r => summaryRowHTML(
+    r.idx + 1, r.code,
+    [`×${r.qty}`, r.disc ? r.disc + '%' : null, r.len ? r.len + ' mm' : null,
+     `${fmtPrice(r.net)} ${t('net').toLowerCase()}`].filter(Boolean).join(' · '),
+    r.lineTotal)).join('');
   return `
     <div class="summary-section">
       <h3 class="summary-section-head">${t('tabMotors')}</h3>
-      <div class="summary-table-wrap">
-        <table class="summary-table">
-          <thead><tr>
-            <th>#</th><th>${t('motorModel')}</th><th>${t('motorLength')}</th>
-            <th>${t('list')}</th><th>${t('discountRate')}</th><th>${t('qty')}</th><th>${t('net')}</th><th>${t('lineTotal')}</th>
-          </tr></thead>
-          <tbody>${body || `<tr><td colspan="8" class="summary-empty">${t('noMotorLines')}</td></tr>`}</tbody>
-        </table>
-      </div>
+      <div class="sum-rows">${body || `<div class="summary-empty">${t('noMotorLines')}</div>`}</div>
     </div>`;
 }
 
@@ -1221,8 +1311,6 @@ function renderSummarySheet(){
   const both = sections.length > 1;
   const title = both ? t('proformaTitle')
     : (summaryPrimary === 'tender' ? t('summaryTitle') : t('motorSummaryTitle'));
-  const totalLabel = both ? t('grandTotal')
-    : (summaryPrimary === 'tender' ? t('tenderTotalLabel') : t('motorsTotalLabel'));
   const otherLabel = summaryPrimary === 'tender' ? t('includeMotors') : t('includeTender');
 
   const body = sections.map(sec => sec === 'tender' ? pumpSectionHTML() : motorSectionHTML()).join('');
@@ -1232,11 +1320,7 @@ function renderSummarySheet(){
   // on the document, and download/print still take it away.
   const sheet = proformaMode
     ? proformaHTML()
-    : `${body}
-      <div class="summary-grand">
-        <span>${totalLabel}</span>
-        <span class="summary-grand-value"><bdi>${fmtPrice(summaryGrandTotal())}</bdi></span>
-      </div>`;
+    : `${summaryKPIsHTML()}${body}`;
 
   return `
     <div class="summary-sheet${proformaMode ? ' is-proforma' : ''}">
@@ -1264,7 +1348,10 @@ function renderSummarySheet(){
         <label class="summary-toggle">
           <input type="checkbox" ${proformaStamp ? 'checked' : ''} onchange="toggleProformaStamp()">
           <span>${t('stampSignature')}</span>
-        </label>` : ''}
+        </label>
+        <button type="button" class="pf-zoombtn" onclick="toggleProformaFit()">
+          ${proformaFit ? t('zoomFull') : t('zoomFit')}
+        </button>` : ''}
         <div class="summary-actions">
           <button type="button" class="btn btn-ghost btn-sm" onclick="downloadSummaryCSV()">${t('downloadCsv')}</button>
           <button type="button" class="btn btn-primary btn-sm" onclick="printSummary()">${t('printSheet')}</button>
@@ -1279,6 +1366,7 @@ function showSummary(primary){
   const overlay = document.getElementById('summaryOverlay');
   overlay.innerHTML = renderSummarySheet();
   overlay.classList.add('open');
+  if (proformaMode) fitProformaPage();
 }
 
 // --- taking it away -------------------------------------------------------
@@ -1527,13 +1615,6 @@ function setProformaLang(next){
   showSummary(summaryPrimary);
 }
 
-// Keeps a field's print twin in step with what is being typed, without a
-// re-render (which would move the caret).
-function pfEcho(input){
-  const echo = input.nextElementSibling;
-  if (echo && echo.classList.contains('pf-echo')) echo.textContent = input.value;
-}
-
 // Anything the user typed lands in an HTML attribute, so it has to be escaped.
 function esc(v){
   return String(v === null || v === undefined ? '' : v)
@@ -1614,21 +1695,66 @@ function proformaTotal(){
 // --- the document ---------------------------------------------------------
 
 // Header, terms and bank rows are all the sheet's label-left / value-right
-// pair, so they share one builder. `key` makes the value an editable field;
-// without it the value is fixed text.
-//
-// An <input> shows only what fits its box, so a long buyer address would print
-// truncated. Editable rows therefore carry the value twice: the field for the
-// screen, and a plain span that wraps, which is the one print shows.
-function pfRow(label, value, key, placeholder){
-  const cell = key
-    ? `<input class="pf-input" type="${key==='date' ? 'date' : 'text'}" value="${esc(value)}"`
-      + ` placeholder="${esc(placeholder||'')}"`
-      + ` oninput="setProformaField('${key}', this.value); pfEcho(this)">`
-      + `<span class="pf-echo">${esc(value)}</span>`
-    : `<span class="pf-fixed">${esc(value)}</span>`;
+// pair, so they share one builder. Values arrive finished: the document is
+// printed, not filled in -- the buyer's side is entered in Customer details
+// on the Tender screen (see renderCustomerHTML).
+function pfRow(label, value, placeholder){
+  const v = String(value == null ? '' : value).trim();
+  const cell = v
+    ? `<span class="pf-fixed">${esc(v)}</span>`
+    : `<span class="pf-fixed pf-blank">${esc(placeholder || '')}</span>`;
   return `<div class="pf-row"><div class="pf-label">${esc(label)}</div><div class="pf-value">${cell}</div></div>`;
 }
+
+// A date is stored ISO and printed the way the document's language writes it.
+function pfDate(iso){
+  if (!iso) return '';
+  const parts = String(iso).split('-');
+  if (parts.length !== 3) return iso;
+  return proformaLang === 'tr' ? `${parts[2]}.${parts[1]}.${parts[0]}`
+                               : `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+// Fit the page to the screen. The proforma is a fixed-width document (A4's
+// proportions, not the app's), so on a phone it either scrolls sideways or it
+// is scaled -- and a document you cannot see the whole of is not a preview.
+// The page keeps its true width and is scaled down to whatever room there is,
+// exactly like the print preview it stands in for.
+const PF_PAGE_WIDTH = 780;
+const STORE_KEY_PROFORMA_FIT = 'msp_proforma_fit_v1';
+
+// Fit shows the whole page at once, which on a phone is a thumbnail: right
+// for checking the shape of the document, too small to read. Full size is
+// the same page at 100%, scrolled. The app cannot lean on pinch-zoom for
+// this -- the viewport meta pins maximum-scale to stop iOS zooming the app
+// when a field takes focus -- so the document carries its own control.
+let proformaFit = loadProformaFit();
+function loadProformaFit(){
+  try{ return localStorage.getItem(STORE_KEY_PROFORMA_FIT) !== '0'; }catch(e){ return true; }
+}
+function toggleProformaFit(){
+  proformaFit = !proformaFit;
+  try{ localStorage.setItem(STORE_KEY_PROFORMA_FIT, proformaFit ? '1' : '0'); }catch(e){}
+  showSummary(summaryPrimary);
+}
+function fitProformaPage(){
+  const vp = document.querySelector('.pf-viewport');
+  const page = document.querySelector('.pf-page');
+  if (!vp || !page) return;
+  if (!proformaFit){
+    page.style.transform = '';
+    vp.style.height = '';
+    vp.classList.add('pf-viewport-full');
+    return;
+  }
+  vp.classList.remove('pf-viewport-full');
+  const scale = Math.min(1, vp.clientWidth / PF_PAGE_WIDTH);
+  page.style.transform = scale < 1 ? `scale(${scale})` : '';
+  // The scaled page still occupies its unscaled height in flow, so the
+  // viewport is told what the visible height actually is.
+  vp.style.height = scale < 1 ? (page.offsetHeight * scale) + 'px' : '';
+}
+window.addEventListener('resize', fitProformaPage);
 
 function proformaHTML(){
   const T = pfT();
@@ -1647,6 +1773,8 @@ function proformaHTML(){
     </tr>`; }).join('');
 
   return `
+  <div class="pf-viewport">
+  <div class="pf-page">
   <div class="pf-doc" dir="ltr" lang="${proformaLang}">
     <div class="pf-letterhead">
       <div class="pf-letterhead-text">${esc(PF_FIXED.letterhead)}</div>
@@ -1655,21 +1783,17 @@ function proformaHTML(){
     <h1 class="pf-title">${esc(T.title)}</h1>
 
     <div class="pf-block">
-      ${pfRow(T.applicant, pfDoc.applicant, 'applicant', T.buyerName)}
-      ${pfRow(T.applicantAdd, pfDoc.applicantAdd, 'applicantAdd', T.buyerAddress)}
+      ${pfRow(T.applicant, pfDoc.applicant, T.buyerName)}
+      ${pfRow(T.applicantAdd, pfDoc.applicantAdd, T.buyerAddress)}
       ${pfRow(T.beneficiary, PF_FIXED.beneficiary)}
       ${pfRow(T.beneficiaryAdd, PF_FIXED.beneficiaryAdd)}
-      ${pfRow(T.tel, pfDoc.tel, 'tel')}
-      ${pfRow(T.email, pfDoc.email, 'email')}
+      ${pfRow(T.tel, pfDoc.tel)}
+      ${pfRow(T.email, pfDoc.email)}
       <div class="pf-row pf-row-split">
         <div class="pf-label">${esc(T.piNo)}</div>
-        <div class="pf-value"><input class="pf-input" type="text" value="${esc(pfDoc.piNo)}"
-             placeholder="68858-260000" oninput="setProformaField('piNo', this.value); pfEcho(this)"
-             ><span class="pf-echo">${esc(pfDoc.piNo)}</span></div>
+        <div class="pf-value"><span class="pf-fixed">${esc(pfDoc.piNo)}</span></div>
         <div class="pf-label pf-label-date">${esc(T.date)}</div>
-        <div class="pf-value pf-value-date"><input class="pf-input" type="date" value="${esc(pfDoc.date)}"
-             oninput="setProformaField('date', this.value); pfEcho(this)"
-             ><span class="pf-echo">${esc(pfDoc.date)}</span></div>
+        <div class="pf-value"><span class="pf-fixed">${esc(pfDate(pfDoc.date))}</span></div>
       </div>
     </div>
 
@@ -1692,10 +1816,10 @@ function proformaHTML(){
     </div>
 
     <div class="pf-block">
-      ${pfRow(T.paymentTerm, pfDoc.paymentTerm, 'paymentTerm')}
-      ${pfRow(T.deliveryTime, pfDoc.deliveryTime, 'deliveryTime')}
+      ${pfRow(T.paymentTerm, pfDoc.paymentTerm)}
+      ${pfRow(T.deliveryTime, pfDoc.deliveryTime)}
       ${pfRow(T.origin, T.vOrigin)}
-      ${pfRow(T.shipmentTerms, pfDoc.shipmentTerms, 'shipmentTerms')}
+      ${pfRow(T.shipmentTerms, pfDoc.shipmentTerms)}
       ${pfRow(T.hsCode, T.vHsCode)}
       ${pfRow(T.packing, T.vPacking)}
       ${pfRow(T.brandName, PF_FIXED.brand)}
@@ -1716,6 +1840,8 @@ function proformaHTML(){
       ${proformaStamp ? '<img class="pf-stamp" src="app-icons/msp-stamp.jpg" alt="">' : ''}
       <span class="pf-sign-label">${esc(T.stampSign)}</span>
     </div>
+  </div>
+  </div>
   </div>`;
 }
 
@@ -1736,7 +1862,7 @@ function proformaCSVRows(){
   out.push([T.beneficiaryAdd, PF_FIXED.beneficiaryAdd]);
   out.push([T.tel, pfDoc.tel]);
   out.push([T.email, pfDoc.email]);
-  out.push([T.piNo, pfDoc.piNo, '', '', '', '', T.date, pfDoc.date]);
+  out.push([T.piNo, pfDoc.piNo, '', '', '', '', T.date, pfDate(pfDoc.date)]);
   out.push([T.description]);
   out.push([T.colNo, T.colQ, T.colHm, T.colSuction, T.colCode, T.colDesc,
             T.colQty, T.colUnitFlat, T.colTotalFlat]);

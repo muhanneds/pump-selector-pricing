@@ -786,9 +786,17 @@ bdi{ unicode-bidi: isolate; }
 
 /* ---------- Summary sheet: toolbar, sections ---------- */
 .summary-tools{
-  display:flex; align-items:center; justify-content:space-between;
-  flex-wrap:wrap; gap:10px 14px;
+  display:flex; align-items:center; flex-wrap:wrap; gap:10px 14px;
   margin:-4px 0 16px; padding-bottom:14px; border-bottom:1px solid var(--line);
+}
+/* The actions sit hard right on a wide toolbar and take their own full-width
+   row once the toggles have used up the line -- which is what a phone does.
+   Without this they wrapped under a toggle and left a ragged half-row. */
+.summary-actions{ margin-left:auto; }
+@media (max-width: 560px){
+  .summary-tools{ gap:8px 12px; }
+  .summary-actions{ margin-left:0; width:100%; }
+  .summary-actions .btn{ flex:1; }
 }
 .summary-toggle{
   display:flex; align-items:center; gap:8px; cursor:pointer;
@@ -807,6 +815,98 @@ bdi{ unicode-bidi: isolate; }
 }
 [dir="rtl"] .summary-section-head{ text-transform:none; letter-spacing:0; }
 
+/* ---------- Summary as a report ----------
+   Same shapes as the route planner's report -- a headline figure, tiles, and
+   rows that wrap -- because it answers the same kind of question on the same
+   kind of screen. */
+.headline{ display:flex; align-items:baseline; gap:9px; margin:2px 0 12px; }
+.headline-v{
+  font-family:var(--font-mono); font-size:30px; font-weight:700;
+  line-height:1; color:var(--amber-deep);
+}
+.headline-l{ font-size:13px; color:var(--ink-soft); }
+.kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:4px; }
+.kpi{
+  background:var(--surface-2); border:1px solid var(--line);
+  border-radius:var(--radius-md); padding:9px 6px; text-align:center;
+}
+.kpi-v{ font-family:var(--font-mono); font-size:16px; font-weight:700; color:var(--navy); }
+.kpi-l{ font-size:10px; color:var(--ink-soft); margin-top:2px; line-height:1.25; }
+@media (max-width: 400px){
+  .kpi-grid{ grid-template-columns:repeat(2,1fr); }
+  .kpi-v{ font-size:18px; }
+}
+
+.sum-rows{ margin:0 -4px; }
+.sum-row{
+  display:flex; align-items:center; gap:10px;
+  padding:11px 4px; border-bottom:1px solid var(--line);
+}
+.sum-row:last-child{ border-bottom:none; }
+.sum-idx{
+  flex:none; width:22px; font-family:var(--font-mono);
+  font-size:11px; color:var(--ink-faint); text-align:center;
+}
+.sum-main{ flex:1; min-width:0; }
+.sum-code{
+  font-family:var(--font-mono); font-size:13.5px; font-weight:700; color:var(--navy);
+  overflow-wrap:anywhere;
+}
+.sum-sub{ font-size:11.5px; color:var(--ink-faint); margin-top:2px; }
+.sum-amt{
+  flex:none; font-family:var(--font-mono); font-size:14px; font-weight:700;
+  color:var(--ink); white-space:nowrap;
+}
+
+/* ---------- Customer details panel ----------
+   The collapsible-card pattern: header always visible with the buyer's name
+   as its subtitle, body only when open. */
+.sec{ padding:0; overflow:hidden; }
+.sec-head{ display:flex; align-items:center; gap:8px; padding:6px 8px 6px 14px; min-height:52px; }
+.sec-toggle{
+  flex:1; min-width:0; display:flex; align-items:center; justify-content:space-between;
+  gap:10px; background:none; border:none; cursor:pointer; padding:6px 0;
+  text-align:left; color:inherit; font:inherit;
+}
+.sec-caret-btn{
+  flex:none; background:none; border:none; cursor:pointer;
+  padding:8px 6px; color:var(--ink-faint); display:flex; align-items:center;
+}
+.sec-title{
+  font-size:12px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+  color:var(--ink-soft); flex:none;
+}
+.sec-meta{
+  font-size:11.5px; color:var(--ink); text-align:right; min-width:0;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.sec-meta-empty{ color:var(--ink-faint); }
+.sec-body{ padding:0 14px 14px; }
+.sec.open .sec-head{ border-bottom:1px solid var(--line); }
+.sec.open .sec-body{ padding-top:14px; }
+[dir="rtl"] .sec-title{ text-transform:none; letter-spacing:0; }
+[dir="rtl"] .sec-meta{ text-align:left; }
+
+.cust-field{ display:block; margin-bottom:10px; }
+.cust-label{
+  display:block; font-size:11px; font-weight:700; letter-spacing:.4px;
+  text-transform:uppercase; color:var(--ink-faint); margin-bottom:5px;
+}
+[dir="rtl"] .cust-label{ text-transform:none; letter-spacing:0; }
+.cust-field input{
+  width:100%; border:1px solid var(--line); border-radius:var(--radius-sm);
+  background:var(--surface); padding:10px 11px; font:inherit; font-size:14px;
+  color:var(--ink);
+}
+.cust-field input:focus{ outline:none; border-color:var(--navy); }
+.cust-2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.cust-sub{
+  font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+  color:var(--ink-faint); margin:14px 0 8px; padding-top:12px;
+  border-top:1px solid var(--line);
+}
+[dir="rtl"] .cust-sub{ text-transform:none; letter-spacing:0; }
+
 /* Print is how a proforma PDF actually gets made, so the page behind the
    overlay and the sheet's own controls come out of the printout. */
 @media print{
@@ -822,6 +922,24 @@ bdi{ unicode-bidi: isolate; }
    to PDF and read next to a proforma the office produced from Excel, so the
    styling stays deliberately plain and stays LTR in every UI language. */
 .summary-sheet.is-proforma{ max-width:920px; }
+/* The document keeps its true width and is scaled into whatever room the
+   screen has (see fitProformaPage), so a phone shows the whole page instead
+   of a sideways-scrolling strip of it. */
+.pf-viewport{ overflow:hidden; }
+/* At full size the page keeps its own width and the viewport scrolls. */
+.pf-viewport-full{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.pf-page{ width:780px; transform-origin:top left; }
+.pf-zoombtn{
+  border:1px solid var(--line); background:var(--surface); color:var(--ink-soft);
+  font:inherit; font-size:12px; font-weight:600; padding:5px 11px;
+  border-radius:var(--radius-sm); cursor:pointer; white-space:nowrap;
+}
+.pf-zoombtn:active{ transform:scale(.98); }
+/* The proforma uses the sheet's full width -- it is a page, not a card, and
+   every millimetre lost to padding is a smaller preview. */
+@media (max-width: 560px){
+  .summary-sheet.is-proforma{ padding-left:10px; padding-right:10px; }
+}
 /* The workbook's own colours, not the app's: theme "Dark Blue, Text 2,
    Darker 25%" for the banded rows and "White, Darker 5%" for the label
    column, in Cambria. The app's navy (#1B3A6B) is close but not the same,
@@ -864,17 +982,10 @@ bdi{ unicode-bidi: isolate; }
 .pf-value-date{ border-left:none; }
 .pf-fixed{ padding:5px 8px; align-self:center; word-break:break-word; }
 
-/* Editable header/terms fields sit flush in their cell: the amber underlay is
-   the app's live-field cue, and it is dropped on print so the document looks
-   typed rather than filled in. */
-.pf-input{
-  width:100%; border:none; background:#FFFBEF; padding:5px 8px;
-  font:inherit; color:#000; min-width:0;
-}
-.pf-input:focus{ outline:2px solid var(--amber-deep); outline-offset:-2px; }
-.pf-input::placeholder{ color:#9AA3B0; }
-/* The print twin of an editable field — hidden on screen, see @media print. */
-.pf-echo{ display:none; }
+/* A value the buyer has not filled in yet shows its prompt in grey on screen
+   and prints as an empty cell, so an unfinished proforma is obvious here and
+   blank on paper rather than carrying a hint into the document. */
+.pf-blank{ color:#9AA3B0; }
 
 .pf-description{
   border:1px solid #000; border-top:none; padding:5px 8px;
@@ -893,7 +1004,7 @@ bdi{ unicode-bidi: isolate; }
 .pf-code{ font-family:var(--font-mono); font-weight:700; white-space:nowrap; }
 /* Description is the one column allowed to wrap — it is column F in the
    workbook, the widest on the sheet, and truncating it loses the spec. */
-.pf-desc{ min-width:190px; }
+.pf-desc{ min-width:230px; }
 .pf-empty{ text-align:center; padding:16px; color:#666; }
 .pf-table tfoot td{ background:var(--pf-navy); color:#fff; }
 .pf-total-label{ text-align:right; font-weight:700; letter-spacing:.5px; }
@@ -940,6 +1051,9 @@ bdi{ unicode-bidi: isolate; }
 
 @media print{
   .summary-sheet.is-proforma{ max-width:none; }
+  /* Paper has the room the phone did not: the page prints unscaled. */
+  .pf-viewport{ overflow:visible; height:auto !important; }
+  .pf-page{ width:auto; transform:none !important; }
   /* The doc carries its own PROFORMA INVOICE title; the overlay's heading
      above it would print as a second one. */
   .summary-sheet.is-proforma .summary-sheet-head{ display:none; }
@@ -947,8 +1061,7 @@ bdi{ unicode-bidi: isolate; }
   .pf-table{ font-size:9.5px; }
   /* Filled fields print as plain typed text, and an empty one prints blank
      rather than showing its placeholder hint. */
-  .pf-input{ display:none; }
-  .pf-echo{ display:block; padding:5px 8px; word-break:break-word; }
+  .pf-blank{ color:transparent; }
   .pf-stamp{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   .pf-table-wrap{ overflow:visible; }
   .pf-table thead{ display:table-header-group; }
