@@ -1242,6 +1242,24 @@ function summaryStats(){
            pct: list > 0 ? Math.round((1 - net/list) * 100) : 0 };
 }
 
+// The summary is a document too -- it gets printed and sent as often as the
+// proforma does, just informally -- so it opens the way the route report
+// does: the mark, what the sheet is, and who and when it is for.
+function summaryHeadHTML(){
+  const who = (pfDoc.applicant || '').trim();
+  const when = pfDate(pfDoc.date) || pfDate(new Date().toISOString().slice(0,10));
+  const sub = [who, when].filter(Boolean).join('  ·  ');
+  const title = summarySections().length > 1 ? t('proformaTitle')
+    : (summaryPrimary === 'tender' ? t('summaryTitle') : t('motorSummaryTitle'));
+  return `<div class="sum-head">
+    <img class="sum-logo" src="app-icons/msp-logo-source.png" alt="MSP">
+    <div class="sum-head-text">
+      <div class="sum-head-title">${esc(title)}</div>
+      <div class="sum-head-sub">${esc(sub)}</div>
+    </div>
+  </div>`;
+}
+
 function summaryKPIsHTML(){
   const st = summaryStats();
   const kpi = (v, l) => `<div class="kpi"><div class="kpi-v"><bdi>${v}</bdi></div><div class="kpi-l">${esc(l)}</div></div>`;
@@ -1320,7 +1338,7 @@ function renderSummarySheet(){
   // on the document, and download/print still take it away.
   const sheet = proformaMode
     ? proformaHTML()
-    : `${summaryKPIsHTML()}${body}`;
+    : `${summaryHeadHTML()}${summaryKPIsHTML()}${body}`;
 
   return `
     <div class="summary-sheet${proformaMode ? ' is-proforma' : ''}">
@@ -1479,7 +1497,7 @@ const PF_TEXT = {
     // Values that are words rather than codes.
     vOrigin: 'Turkey',
     vPacking: 'Standard Wooden Box / Cardboard Box',
-    vHsCode: 'Subm. Pump: 8413702900. Sub. Motor: 8501522090; 8501523090; 8501529090',
+    vHsCode: 'Submersible Pump: 8413702900  ·  Submersible Motor: 8501522090; 8501523090; 8501529090',
     vPaymentTerm: '%40 Advance Payment TT, %60 TT Before Shipment',
     vDeliveryTime: '8-10 Weeks',
     // Pieces the product description is assembled from.
@@ -1509,7 +1527,7 @@ const PF_TEXT = {
     originCaps: 'MENŞEİ', stampSign: 'Kaşe ve İmza',
     vOrigin: 'Türkiye',
     vPacking: 'Standart Ahşap Kasa / Karton Kutu',
-    vHsCode: 'Dalgıç Pompa: 8413702900. Dalgıç Motor: 8501522090; 8501523090; 8501529090',
+    vHsCode: 'Dalgıç Pompa: 8413702900  ·  Dalgıç Motor: 8501522090; 8501523090; 8501529090',
     vPaymentTerm: '%40 Peşin TT, %60 Sevkiyat Öncesi TT',
     vDeliveryTime: '8-10 Hafta',
     dPump: 'Dalgıç pompa', dMotor: 'dalgıç motor',
@@ -1522,9 +1540,17 @@ const PF_TEXT = {
 // and in both languages. Addresses, HS codes and bank details are transcribed
 // on the buyer's side exactly as printed, so they are never translated.
 const PF_FIXED = {
-  letterhead: 'MSP TEKNIK MAKINA SAN. TIC. A.S. // Address: Org. San. Bölgesi 7. Sok No: 1/3 Nevsehir / Turkey  Tel: +90 384 242 92 90  Fax: +90 384 242 92 91',
-  beneficiary: 'MSP TEKNIK MAKINA SAN. TIC. A.S.',
-  beneficiaryAdd: 'OSB 7. Sok NO:1/3 NEVSEHIR TURKEY  Tel: 0090 384 242 9290',
+  // The workbook keeps all of this on one run-on line, with the company name,
+  // the address and both numbers separated by "//" and double spaces -- how a
+  // single Excel cell has to hold a letterhead, not how a letterhead reads.
+  // Here it is three lines. The name carries its Turkish characters: the
+  // workbook's ASCII spelling is an artifact of the same cell, not the
+  // company's name.
+  company: 'MSP TEKNİK MAKİNA SAN. TİC. A.Ş.',
+  address: 'Org. San. Bölgesi 7. Sok. No: 1/3, Nevşehir',
+  contact: 'Tel: +90 384 242 92 90   ·   Fax: +90 384 242 92 91',
+  beneficiary: 'MSP TEKNİK MAKİNA SAN. TİC. A.Ş.',
+  beneficiaryAdd: 'Org. San. Bölgesi 7. Sok. No: 1/3, Nevşehir / Turkey   ·   Tel: +90 384 242 92 90',
   brand: 'MSP',
   bank: 'VAKIFLAR BANKASI TAO',
   branch: '',
@@ -1626,12 +1652,17 @@ function esc(v){
     .replace(/"/g,'&quot;');
 }
 
-// Prices on an invoice carry cents. fmtPrice rounds to whole dollars for the
-// on-screen summary, which is the wrong precision for a document a bank pays
-// against, so the proforma formats its own.
+// Prices on an invoice carry cents and a currency. fmtPrice rounds to whole
+// dollars for the on-screen summary, which is the wrong precision for a
+// document a bank pays against, so the proforma formats its own -- and marks
+// every price cell with the currency, the way the workbook's own
+// [$$-409]#,##0.00 format does. A figure on a proforma with no currency
+// against it is not a price, and the bank cannot act on it.
+const PF_CURRENCY = '$';
+const PF_CURRENCY_CODE = 'USD';
 function pfMoney(n){
   if (n === null || n === undefined || isNaN(n)) return '';
-  return Number(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return PF_CURRENCY + Number(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 function pfNum(n){
   if (n === null || n === undefined || isNaN(n)) return '';
@@ -1781,8 +1812,11 @@ window.addEventListener('resize', fitProformaPage);
 // so the document keeps the sheet's proportions at any width. Without the
 // NEMA column its share goes to the description, which is the column that
 // always wants more room.
-const PF_COLS      = [4.2, 6.0, 5.9, 6.6, 13.0, 39.2, 6.3, 8.6, 10.2];
-const PF_COLS_NONEMA = [4.2, 6.0, 5.9, 13.0, 45.8, 6.3, 8.6, 10.2];
+// The two price columns are a shade wider than the workbook's, because these
+// carry the currency mark the workbook left to a cell format -- at the sheet's
+// own widths a six-figure total would not fit. The description gives it up.
+const PF_COLS        = [4.2, 6.0, 5.9, 6.6, 13.0, 37.4, 6.3, 9.2, 11.4];
+const PF_COLS_NONEMA = [4.2, 6.0, 5.9, 13.0, 44.0, 6.3, 9.2, 11.4];
 
 function proformaHTML(){
   const T = pfT();
@@ -1809,7 +1843,11 @@ function proformaHTML(){
   <div class="pf-page">
   <div class="pf-doc" dir="ltr" lang="${proformaLang}">
     <div class="pf-letterhead">
-      <div class="pf-letterhead-text">${esc(PF_FIXED.letterhead)}</div>
+      <div class="pf-letterhead-text">
+        <div class="pf-company">${esc(PF_FIXED.company)}</div>
+        <div class="pf-addr">${esc(PF_FIXED.address)} / ${esc(T.vOrigin)}</div>
+        <div class="pf-addr">${esc(PF_FIXED.contact)}</div>
+      </div>
       <img class="pf-logo" src="app-icons/msp-logo-letterhead.png" alt="MSP">
     </div>
     <h1 class="pf-title">${esc(T.title)}</h1>
@@ -1887,7 +1925,8 @@ function proformaHTML(){
 function proformaCSVRows(){
   const T = pfT();
   const out = [];
-  out.push([PF_FIXED.letterhead]);
+  out.push([PF_FIXED.company]);
+  out.push([PF_FIXED.address + ' / ' + T.vOrigin, PF_FIXED.contact]);
   out.push([T.title]);
   out.push([]);
   out.push([T.applicant, pfDoc.applicant]);
@@ -1898,9 +1937,13 @@ function proformaCSVRows(){
   out.push([T.email, pfDoc.email]);
   out.push([T.piNo, pfDoc.piNo, '', '', '', '', T.date, pfDate(pfDoc.date)]);
   out.push([T.description]);
+  // The figures stay raw so Excel can sum them; the currency goes in the
+  // heading instead of in front of every number.
+  const unitCol = T.colUnitFlat + ' (' + PF_CURRENCY_CODE + ')';
+  const totalCol = T.colTotalFlat + ' (' + PF_CURRENCY_CODE + ')';
   out.push(proformaNema
-    ? [T.colNo, T.colQ, T.colHm, T.colSuction, T.colCode, T.colDesc, T.colQty, T.colUnitFlat, T.colTotalFlat]
-    : [T.colNo, T.colQ, T.colHm, T.colCode, T.colDesc, T.colQty, T.colUnitFlat, T.colTotalFlat]);
+    ? [T.colNo, T.colQ, T.colHm, T.colSuction, T.colCode, T.colDesc, T.colQty, unitCol, totalCol]
+    : [T.colNo, T.colQ, T.colHm, T.colCode, T.colDesc, T.colQty, unitCol, totalCol]);
   proformaLines().forEach(function(r,i){
     out.push(proformaNema
       ? [i+1, r.q, r.hm, r.suction, r.code, r.desc, r.qty, r.unit, r.total]
