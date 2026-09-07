@@ -1252,7 +1252,7 @@ function summaryHeadHTML(){
   const title = summarySections().length > 1 ? t('proformaTitle')
     : (summaryPrimary === 'tender' ? t('summaryTitle') : t('motorSummaryTitle'));
   return `<div class="sum-head">
-    <img class="sum-logo" src="app-icons/msp-logo-source.png" alt="MSP">
+    <img class="sum-logo" src="app-icons/msp-logo-flat.png" alt="MSP">
     <div class="sum-head-text">
       <div class="sum-head-title">${esc(title)}</div>
       <div class="sum-head-sub">${esc(sub)}</div>
@@ -1371,9 +1371,7 @@ function renderSummarySheet(){
           <input type="checkbox" ${proformaNema ? 'checked' : ''} onchange="toggleProformaNema()">
           <span>${t('nemaColumn')}</span>
         </label>
-        <button type="button" class="pf-zoombtn" onclick="toggleProformaFit()">
-          ${proformaFit ? t('zoomFull') : t('zoomFit')}
-        </button>` : ''}
+` : ''}
         <div class="summary-actions">
           <button type="button" class="btn btn-ghost btn-sm" onclick="downloadSummaryCSV()">${t('downloadCsv')}</button>
           <button type="button" class="btn btn-primary btn-sm" onclick="printSummary()">${t('printSheet')}</button>
@@ -1388,7 +1386,6 @@ function showSummary(primary){
   const overlay = document.getElementById('summaryOverlay');
   overlay.innerHTML = renderSummarySheet();
   overlay.classList.add('open');
-  if (proformaMode) fitProformaPage();
 }
 
 // --- taking it away -------------------------------------------------------
@@ -1750,13 +1747,6 @@ function pfDate(iso){
                                : `${parts[2]}/${parts[1]}/${parts[0]}`;
 }
 
-// Fit the page to the screen. The proforma is a fixed-width document (A4's
-// proportions, not the app's), so on a phone it either scrolls sideways or it
-// is scaled -- and a document you cannot see the whole of is not a preview.
-// The page keeps its true width and is scaled down to whatever room there is,
-// exactly like the print preview it stands in for.
-const PF_PAGE_WIDTH = 780;
-const STORE_KEY_PROFORMA_FIT  = 'msp_proforma_fit_v1';
 const STORE_KEY_PROFORMA_NEMA = 'msp_proforma_nema_v1';
 
 // The Suction / NEMA column is on the workbook's sheet but is not always
@@ -1775,38 +1765,6 @@ function toggleProformaNema(){
   showSummary(summaryPrimary);
 }
 
-// Fit shows the whole page at once, which on a phone is a thumbnail: right
-// for checking the shape of the document, too small to read. Full size is
-// the same page at 100%, scrolled. The app cannot lean on pinch-zoom for
-// this -- the viewport meta pins maximum-scale to stop iOS zooming the app
-// when a field takes focus -- so the document carries its own control.
-let proformaFit = loadProformaFit();
-function loadProformaFit(){
-  try{ return localStorage.getItem(STORE_KEY_PROFORMA_FIT) !== '0'; }catch(e){ return true; }
-}
-function toggleProformaFit(){
-  proformaFit = !proformaFit;
-  try{ localStorage.setItem(STORE_KEY_PROFORMA_FIT, proformaFit ? '1' : '0'); }catch(e){}
-  showSummary(summaryPrimary);
-}
-function fitProformaPage(){
-  const vp = document.querySelector('.pf-viewport');
-  const page = document.querySelector('.pf-page');
-  if (!vp || !page) return;
-  if (!proformaFit){
-    page.style.transform = '';
-    vp.style.height = '';
-    vp.classList.add('pf-viewport-full');
-    return;
-  }
-  vp.classList.remove('pf-viewport-full');
-  const scale = Math.min(1, vp.clientWidth / PF_PAGE_WIDTH);
-  page.style.transform = scale < 1 ? `scale(${scale})` : '';
-  // The scaled page still occupies its unscaled height in flow, so the
-  // viewport is told what the visible height actually is.
-  vp.style.height = scale < 1 ? (page.offsetHeight * scale) + 'px' : '';
-}
-window.addEventListener('resize', fitProformaPage);
 
 // The workbook's column widths (A 5.14 … I 12.57 characters) as percentages,
 // so the document keeps the sheet's proportions at any width. Without the
@@ -1839,8 +1797,6 @@ function proformaHTML(){
     </tr>`; }).join('');
 
   return `
-  <div class="pf-viewport">
-  <div class="pf-page">
   <div class="pf-doc" dir="ltr" lang="${proformaLang}">
     <div class="pf-letterhead">
       <div class="pf-letterhead-text">
@@ -1912,8 +1868,6 @@ function proformaHTML(){
       ${proformaStamp ? '<img class="pf-stamp" src="app-icons/msp-stamp.jpg" alt="">' : ''}
       <span class="pf-sign-label">${esc(T.stampSign)}</span>
     </div>
-  </div>
-  </div>
   </div>`;
 }
 

@@ -936,24 +936,14 @@ bdi{ unicode-bidi: isolate; }
    to PDF and read next to a proforma the office produced from Excel, so the
    styling stays deliberately plain and stays LTR in every UI language. */
 .summary-sheet.is-proforma{ max-width:920px; }
-/* The document keeps its true width and is scaled into whatever room the
-   screen has (see fitProformaPage), so a phone shows the whole page instead
-   of a sideways-scrolling strip of it. */
-.pf-viewport{ overflow:hidden; }
-/* At full size the page keeps its own width and the viewport scrolls. */
-.pf-viewport-full{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
-.pf-page{ width:780px; transform-origin:top left; }
-.pf-zoombtn{
-  border:1px solid var(--line); background:var(--surface); color:var(--ink-soft);
-  font:inherit; font-size:12px; font-weight:600; padding:5px 11px;
-  border-radius:var(--radius-sm); cursor:pointer; white-space:nowrap;
-}
-.pf-zoombtn:active{ transform:scale(.98); }
-/* The proforma uses the sheet's full width -- it is a page, not a card, and
-   every millimetre lost to padding is a smaller preview. */
-@media (max-width: 560px){
-  .summary-sheet.is-proforma{ padding-left:10px; padding-right:10px; }
-}
+/* The document is a plain block that takes the width it is given. Only the
+   line table has a width of its own to defend, and it scrolls on its own the
+   way any wide table does.
+
+   On a phone the label/value pairs stop being two columns and stack, which is
+   the one change that keeps the document readable at 375px -- a 150px label
+   beside a value leaves nothing for the value, and the four-cell number/date
+   row degenerates completely. */
 /* The workbook's own colours, not the app's: theme "Dark Blue, Text 2,
    Darker 25%" for the banded rows and "White, Darker 5%" for the label
    column, in Cambria. The app's navy (#1B3A6B) is close but not the same,
@@ -1006,9 +996,9 @@ bdi{ unicode-bidi: isolate; }
   font-weight:700; font-size:11px; background:var(--pf-band);
 }
 
-.pf-table-wrap{ overflow-x:auto; }
+.pf-table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
 .pf-table{
-  width:100%; border-collapse:collapse; font-size:11px;
+  width:100%; min-width:640px; border-collapse:collapse; font-size:11px;
   /* The colgroup carries the workbook's proportions; fixed layout is what
      makes the browser honour them instead of sizing to content, which is how
      the table used to grow past the paper. */
@@ -1092,11 +1082,8 @@ bdi{ unicode-bidi: isolate; }
     border:none; border-radius:0; box-shadow:none;
   }
   .summary-sheet.is-proforma{ max-width:none; }
-  /* Paper has the room the phone did not: the page prints unscaled and at
-     the paper's own width, never the 780px the screen preview uses. */
-  .pf-viewport{ overflow:visible !important; height:auto !important; }
-  .pf-page{ width:100% !important; transform:none !important; }
   .pf-table-wrap{ overflow:visible !important; }
+  .pf-table{ min-width:0; }
   /* The doc carries its own PROFORMA INVOICE title; the overlay's heading
      above it would print as a second one. */
   .summary-sheet.is-proforma .summary-sheet-head{ display:none; }
@@ -1124,3 +1111,17 @@ bdi{ unicode-bidi: isolate; }
   }
 }
 
+/* On a phone the document's label/value pairs stop being two columns and
+   stack. It is the one change that keeps it readable at 375px: a 150px label
+   beside a value leaves nothing for the value, and the four-cell number/date
+   row degenerates completely. Placed last, after the rules it overrides.
+   A4 is ~718px in print, so none of this reaches paper. */
+@media (max-width: 560px){
+  .summary-sheet.is-proforma{ padding-left:12px; padding-right:12px; }
+  .pf-letterhead{ flex-direction:column; gap:8px; }
+  .pf-logo{ width:110px; }
+  .pf-row, .pf-row-split{ grid-template-columns:1fr; }
+  .pf-label{ border-right:none; border-bottom:1px solid #000; }
+  .pf-label-date{ border-left:none; border-top:1px solid #000; }
+  .pf-fixed{ min-height:22px; }
+}
