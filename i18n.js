@@ -19,6 +19,13 @@ const LANGS = {
 
 const STRINGS = {
   en: {
+    // --- Motors screen ---
+    tabMotors:'Motors', noMotorLines:'No motors added yet', addMotor:'Add motor',
+    motorsTotalLabel:'Motors total', motorSummaryTitle:'Motor summary',
+    motorSize:'Size', motorLength:'Motor Length',
+    chooseMotor:'Choose a motor model',
+    unknownMotorCode:'Not in the price list — check the code',
+    motorSummaryMeta:'{size} · {len} · ×{qty}',
     appTitle:'MSP Price', tabSelector:'Selector', tabTender:'Tender',
     language:'Language',
     dutyPoint:'Duty point',
@@ -54,6 +61,13 @@ const STRINGS = {
     motorDiscountRate:'Motor Discount Rate', pumpDiscountRate:'Pump Discount Rate'
   },
   tr: {
+    // --- Motorlar ekranı ---
+    tabMotors:'Motorlar', noMotorLines:'Henüz motor eklenmedi', addMotor:'Motor ekle',
+    motorsTotalLabel:'Motor toplamı', motorSummaryTitle:'Motor özeti',
+    motorSize:'Ölçü', motorLength:'Motor Boyu',
+    chooseMotor:'Bir motor modeli seçin',
+    unknownMotorCode:'Fiyat listesinde yok — kodu kontrol edin',
+    motorSummaryMeta:'{size} · {len} · ×{qty}',
     appTitle:'MSP Fiyat', tabSelector:'Seçici', tabTender:'Teklif',
     language:'Dil',
     dutyPoint:'Çalışma noktası',
@@ -89,6 +103,13 @@ const STRINGS = {
     motorDiscountRate:'Motor İskontosu', pumpDiscountRate:'Pompa İskontosu'
   },
   ar: {
+    // --- شاشة المحركات ---
+    tabMotors:'المحركات', noMotorLines:'لم تُضف محركات بعد', addMotor:'إضافة محرك',
+    motorsTotalLabel:'إجمالي المحركات', motorSummaryTitle:'ملخص المحركات',
+    motorSize:'المقاس', motorLength:'طول المحرك',
+    chooseMotor:'اختر موديل المحرك',
+    unknownMotorCode:'غير موجود في قائمة الأسعار — تحقق من الكود',
+    motorSummaryMeta:'{size} · {len} · ×{qty}',
     appTitle:'أسعار MSP', tabSelector:'المحدد', tabTender:'العطاء',
     language:'اللغة',
     dutyPoint:'نقطة التشغيل',
@@ -124,6 +145,13 @@ const STRINGS = {
     motorDiscountRate:'نسبة خصم المحرك', pumpDiscountRate:'نسبة خصم المضخة'
   },
   es: {
+    // --- Pantalla de motores ---
+    tabMotors:'Motores', noMotorLines:'Aún no hay motores', addMotor:'Añadir motor',
+    motorsTotalLabel:'Total motores', motorSummaryTitle:'Resumen de motores',
+    motorSize:'Tamaño', motorLength:'Longitud del motor',
+    chooseMotor:'Elija un modelo de motor',
+    unknownMotorCode:'No figura en la lista de precios — revise el código',
+    motorSummaryMeta:'{size} · {len} · ×{qty}',
     appTitle:'Precios MSP', tabSelector:'Selector', tabTender:'Licitación',
     language:'Idioma',
     dutyPoint:'Punto de trabajo',

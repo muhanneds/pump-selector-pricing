@@ -754,3 +754,32 @@ bdi{ unicode-bidi: isolate; }
 [dir="rtl"] .field > div > label,
 [dir="rtl"] .plate .plate-label{ font-size:12.5px; }
 [dir="rtl"] .tabbar button{ font-size:12px; }
+
+/* ---------- Motors screen ----------
+   The stat strip is shared with Tender's pump row, whose columns are weighted
+   for "Selected Pump / Motor / Pump Length / HM". A motor line carries three
+   items of its own, and the widest label ("Motor Length", "Longitud del
+   motor") was being ellipsised at the 1.05fr column. Own weights, and labels
+   allowed to wrap onto a second line instead of being cut -- the value below
+   still never wraps. */
+.motor-stats-slot .pump-stats{ grid-template-columns: 1.45fr .75fr 1fr; }
+.motor-stats-slot .pump-stats .stat-label{
+  white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.25;
+}
+
+/* The price strip is a flex COLUMN, so each row inside it has to be its own
+   flex row or the label and the figure sit hard against each other
+   ("List Price$1,080"). Two spans only, no loose text, so flex is safe here --
+   unlike .plate .status, which carries sentence fragments. */
+.motor-strip-slot .price-strip .rrow{
+  display:flex; align-items:baseline; justify-content:space-between; gap:14px;
+}
+.motor-strip-slot .price-strip .rrow .rmodel{ white-space:nowrap; }
+/* The line total is what gets quoted, so it carries the strip's accent and is
+   separated from the two figures it is derived from. */
+.motor-strip-slot .price-strip .rrow-total{
+  border-top:1px solid var(--amber-deep); padding-top:7px; margin-top:1px;
+}
+.motor-strip-slot .price-strip .rrow-total .rmodel{
+  color: var(--amber-deep); font-size:15px;
+}

@@ -362,9 +362,12 @@ function closeSummary(){
 let currentTab = 'selector';
 function switchTab(tab){
   const changingTab = tab !== currentTab;
+  const prevTab = currentTab;
   currentTab = tab;
   document.getElementById('tabSelector').classList.toggle('active', tab==='selector');
+  document.getElementById('tabMotors').classList.toggle('active', tab==='motors');
   document.getElementById('tabTender').classList.toggle('active', tab==='tender');
+  renderChrome();
   render();
   // render() replaces #main's CONTENT, but #main itself is the same element
   // across every switch — so a previous direction's class is still sitting
@@ -375,16 +378,20 @@ function switchTab(tab){
     const main = document.getElementById('main');
     main.classList.remove('tab-enter-l', 'tab-enter-r');
     void main.offsetWidth;
-    main.classList.add(tab === 'tender' ? 'tab-enter-r' : 'tab-enter-l');
+    // Three tabs now, so the slide direction follows the actual order rather
+    // than a single 'is it tender' test.
+    const order = ['selector','motors','tender'];
+    main.classList.add(order.indexOf(tab) > order.indexOf(prevTab) ? 'tab-enter-r' : 'tab-enter-l');
   }
 }
 
 // Re-label everything that lives outside <main> (top bar, tab bar, picker).
 function renderChrome(){
   document.getElementById('appTitle').textContent = t('appTitle');
-  document.getElementById('topSub').textContent =
-    currentTab==='selector' ? t('tabSelector') : t('tabTender');
+  const TAB_LABEL = { selector:'tabSelector', motors:'tabMotors', tender:'tabTender' };
+  document.getElementById('topSub').textContent = t(TAB_LABEL[currentTab]);
   document.getElementById('tabSelectorLabel').textContent = t('tabSelector');
+  document.getElementById('tabMotorsLabel').textContent = t('tabMotors');
   document.getElementById('tabTenderLabel').textContent = t('tabTender');
   const sel = document.getElementById('langSel');
   sel.setAttribute('aria-label', t('language'));
@@ -408,6 +415,10 @@ function render(){
     document.getElementById('freqPill').style.display = selState.frequency ? '' : 'none';
     main.innerHTML = renderSelectorHTML();
     wireSelectorEvents();
+  } else if (currentTab === 'motors'){
+    document.getElementById('freqPill').style.display = 'none';
+    main.innerHTML = renderMotorsHTML();
+    wireMotorsEvents();
   } else {
     document.getElementById('freqPill').style.display = 'none';
     main.innerHTML = renderTenderHTML();
@@ -889,4 +900,302 @@ if ('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
     navigator.serviceWorker.register('service-worker.js').catch(()=>{});
   });
+}
+
+// ---------------------------------------------------------------------------
+// Motors screen — the Tender pattern applied to motors on their own.
+//
+// Tender prices a pump and optionally hangs a motor off it. This screen is for
+// the other half of the business: quoting motors as the product, with no duty
+// point involved. A line is just a motor code, its discount and a quantity,
+// which is why it carries its own list rather than reusing tender lines --
+// a motor-only line has no Q/H and would show up in the pump tender as an
+// unpriced ghost row.
+//
+// Everything the motor contributes is read from MOTOR_DATA by exact code, the
+// same lookup Tender uses, so the two screens can never disagree on a price.
+// ---------------------------------------------------------------------------
+const STORE_KEY_MOTORS = 'msp_motor_lines_v1';
+
+let motorLines = loadMotorLines();
+let openMotorId = null;
+
+function loadMotorLines(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY_MOTORS);
+    if (raw) return JSON.parse(raw);
+  }catch(e){}
+  return [];
+}
+function saveMotorLines(){
+  try{ localStorage.setItem(STORE_KEY_MOTORS, JSON.stringify(motorLines)); }catch(e){}
+}
+function newMotorLine(){
+  return { id: Date.now()+Math.random().toString(16).slice(2),
+           code:'', discount:0, unitNo:1 };
+}
+
+// Net = list less this line's own discount, times quantity. A line whose code
+// doesn't match the price list contributes nothing at all rather than zero --
+// same rule as Tender, so a typo can never quietly deflate a quotation.
+function motorLineTotals(line){
+  const m = motorLookup(line.code);
+  if (!m) return null;
+  const disc = Number(line.discount) || 0;
+  const qty  = Number(line.unitNo) || 1;
+  const net  = m.price * (100 - disc) / 100;
+  return { motor: m, disc, qty, list: m.price, net, lineTotal: net * qty };
+}
+
+function motorsTotal(){
+  let total = 0, hasAnyPrice = false;
+  for (const line of motorLines){
+    const tot = motorLineTotals(line);
+    if (!tot) continue;
+    hasAnyPrice = true;
+    total += tot.lineTotal;
+  }
+  return { total, hasAnyPrice };
+}
+
+function renderMotorsTotalHTML(){
+  const { total, hasAnyPrice } = motorsTotal();
+  if (!hasAnyPrice) return '';
+  return `<div class="card price-total">
+    <div>
+      <div class="price-total-label">${t('motorsTotalLabel')}</div>
+      <div class="price-total-value"><bdi>${fmtPrice(total)}</bdi></div>
+    </div>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="openMotorSummary()">${t('viewSummary')}</button>
+  </div>`;
+}
+
+// Collapsed-card summary and the open card's price strip, kept together so
+// typing can refresh both without rebuilding the inputs.
+function motorLineOutputs(line){
+  const code = (line.code || '').trim();
+  const tot = motorLineTotals(line);
+
+  if (!code){
+    return { summaryModel: '—', summaryMeta: t('chooseMotor'), summaryExtra: '',
+             statsHTML: '', priceHTML: '', key: 'empty' };
+  }
+  if (!tot){
+    return { summaryModel: `<bdi>${code}</bdi>`,
+             summaryMeta: t('unknownMotorCode'), summaryExtra: '',
+             statsHTML: '', priceHTML: '', key: 'unknown:'+code };
+  }
+
+  const m = tot.motor;
+  const statsHTML = `<div class="pump-stats">
+      <div><div class="stat-label">${t('motorModel')}</div><div class="stat-value"><bdi>${code}</bdi></div></div>
+      <div><div class="stat-label">${t('motorSize')}</div><div class="stat-value"><bdi>${m.size}</bdi></div></div>
+      <div><div class="stat-label">${t('motorLength')}</div><div class="stat-value"><bdi>${m.len ? m.len + ' mm' : '—'}</bdi></div></div>
+    </div>`;
+
+  const priceHTML = `<div class="result-strip price-strip">
+      <div class="rrow"><span class="rmeta">${t('list')}</span><span class="rmodel"><bdi>${fmtPrice(tot.list)}</bdi></span></div>
+      <div class="rrow"><span class="rmeta">${t('unitPrice')}${tot.disc ? ' · ' + bidi(tot.disc + '%') : ''}</span><span class="rmodel"><bdi>${fmtPrice(tot.net)}</bdi></span></div>
+      <div class="rrow rrow-total"><span class="rmeta">${t('lineTotal')} × ${bidi(tot.qty)}</span><span class="rmodel"><bdi>${fmtPrice(tot.lineTotal)}</bdi></span></div>
+    </div>`;
+
+  return {
+    summaryModel: `<bdi>${code}</bdi>`,
+    summaryMeta: t('motorSummaryMeta', { size: bidi(m.size), len: bidi(m.len ? m.len + ' mm' : '—'), qty: bidi(tot.qty) }),
+    summaryExtra: `<bdi>${fmtPrice(tot.lineTotal)}</bdi>`,
+    statsHTML, priceHTML,
+    key: 'ok:' + code + ':' + tot.disc + ':' + tot.qty
+  };
+}
+
+function renderMotorsHTML(){
+  if (motorLines.length === 0){
+    return `
+      <div class="tender-header"><h2>${t('tabMotors')}</h2><span class="tender-count">${tn('lines', 0)}</span></div>
+      <div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3"/><circle cx="12" cy="12" r="2.5"/></svg>
+        <p>${t('noMotorLines')}</p>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="addMotorLine()">${t('addMotor')}</button>
+      ${renderSocialFooterHTML()}
+    `;
+  }
+  const lines = motorLines.map((line, idx) => renderMotorCard(line, idx)).join('');
+  return `
+    <div class="tender-header"><h2>${t('tabMotors')}</h2><span class="tender-count">${tn('lines', motorLines.length)}</span></div>
+    <div id="motorsTotalSlot">${renderMotorsTotalHTML()}</div>
+    ${lines}
+    <button class="btn btn-primary btn-block" onclick="addMotorLine()">${t('addMotor')}</button>
+    <div style="height:4px"></div>
+    ${renderSocialFooterHTML()}
+  `;
+}
+
+function renderMotorCard(line, idx){
+  const isOpen = openMotorId === line.id;
+  const { summaryModel, summaryMeta, summaryExtra, statsHTML, priceHTML } = motorLineOutputs(line);
+  return `
+  <div class="line-card ${isOpen?'open':''}" data-id="${line.id}">
+    <div class="line-card-head" onclick="toggleMotorLine('${line.id}')">
+      <div class="line-num">${idx+1}</div>
+      <div class="summary">
+        <div class="m1-row">
+          <div class="m1">${summaryModel}</div>
+          ${summaryExtra ? `<div class="m3">${summaryExtra}</div>` : ''}
+        </div>
+        <div class="m2">${summaryMeta}</div>
+      </div>
+      <svg class="chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="line-card-body-wrap">
+    <div class="line-card-body">
+      <div class="field">
+        <label>${t('motorModel')}</label>
+        <input type="text" list="motorCodeList" class="motor-line-input motor-input" data-field="code" value="${(line.code||'').replace(/"/g,'&quot;')}" placeholder="${t('motorPlaceholder')}" autocomplete="off">
+      </div>
+      <div class="motor-stats-slot">${statsHTML}</div>
+      <div class="field row2 discount-row">
+        <div>
+          <label>${t('discountRate')}</label>
+          <div class="numfield"><input type="number" inputmode="decimal" class="motor-line-input" data-field="discount" value="${line.discount||0}"><span class="unit">%</span></div>
+        </div>
+        <div>
+          <label>${t('unitNo')}</label>
+          <div class="numfield"><input type="number" inputmode="numeric" min="1" step="1" class="motor-line-input" data-field="unitNo" value="${line.unitNo||1}"></div>
+        </div>
+      </div>
+      <div class="motor-strip-slot">${priceHTML}</div>
+      <div class="field" style="display:flex; gap:8px; margin-top:14px;">
+        <button class="btn btn-ghost btn-sm" onclick="duplicateMotorLine('${line.id}')">${t('duplicate')}</button>
+        <button class="btn btn-danger-ghost btn-sm" onclick="deleteMotorLine('${line.id}')">${t('del')}</button>
+      </div>
+    </div>
+    </div>
+  </div>`;
+}
+
+function toggleMotorLine(id){
+  const prevOpenId = openMotorId;
+  const wasOpen = prevOpenId === id;
+  openMotorId = wasOpen ? null : id;
+  if (prevOpenId && prevOpenId !== id){
+    const prev = document.querySelector(`.line-card[data-id="${prevOpenId}"]`);
+    if (prev) prev.classList.remove('open');
+  }
+  const card = document.querySelector(`.line-card[data-id="${id}"]`);
+  if (card) card.classList.toggle('open', !wasOpen);
+}
+
+function addMotorLine(){
+  const l = newMotorLine();
+  motorLines.push(l);
+  openMotorId = l.id;
+  saveMotorLines();
+  render();
+  const card = document.querySelector(`.line-card[data-id="${l.id}"]`);
+  if (card){
+    card.classList.add('line-enter');
+    card.addEventListener('animationend', ()=> card.classList.remove('line-enter'), { once:true });
+    setTimeout(()=> card.scrollIntoView({behavior:'smooth', block:'center'}), 30);
+  }
+}
+
+function duplicateMotorLine(id){
+  const i = motorLines.findIndex(l=>l.id===id);
+  if (i < 0) return;
+  const copy = Object.assign({}, motorLines[i], { id: Date.now()+Math.random().toString(16).slice(2) });
+  motorLines.splice(i+1, 0, copy);
+  openMotorId = copy.id;
+  saveMotorLines();
+  render();
+}
+
+function deleteMotorLine(id){
+  motorLines = motorLines.filter(l=>l.id!==id);
+  if (openMotorId === id) openMotorId = null;
+  saveMotorLines();
+  render();
+}
+
+function wireMotorsEvents(){
+  document.querySelectorAll('.motor-line-input').forEach(inp=>{
+    inp.addEventListener('click', e=>e.stopPropagation());
+    inp.addEventListener('input', e=>{
+      const card = e.target.closest('.line-card');
+      const line = motorLines.find(l=>l.id===card.dataset.id);
+      if (!line) return;
+      line[e.target.dataset.field] = e.target.value;
+      saveMotorLines();
+      // Refresh only what the value changed -- rebuilding the card would take
+      // the focused <input type="number"> with it and drop the caret to 0.
+      const out = motorLineOutputs(line);
+      card.querySelector('.motor-stats-slot').innerHTML = out.statsHTML;
+      card.querySelector('.motor-strip-slot').innerHTML = out.priceHTML;
+      card.querySelector('.line-card-head .m1').innerHTML = out.summaryModel;
+      card.querySelector('.line-card-head .m2').innerHTML = out.summaryMeta;
+      const m3 = card.querySelector('.line-card-head .m3');
+      if (m3) m3.innerHTML = out.summaryExtra;
+      else if (out.summaryExtra){
+        const row = card.querySelector('.line-card-head .m1-row');
+        const d = document.createElement('div'); d.className = 'm3'; d.innerHTML = out.summaryExtra;
+        row.appendChild(d);
+      }
+      document.getElementById('motorsTotalSlot').innerHTML = renderMotorsTotalHTML();
+    });
+  });
+}
+
+// Print-style rollup, same sheet as Tender's but with the motor's own columns.
+function motorSummaryRows(){
+  const rows = [];
+  motorLines.forEach((line, idx) => {
+    const tot = motorLineTotals(line);
+    if (!tot) return;
+    rows.push({ idx, code: (line.code||'').trim(), size: tot.motor.size,
+                len: tot.motor.len, qty: tot.qty, list: tot.list,
+                disc: tot.disc, net: tot.net, lineTotal: tot.lineTotal });
+  });
+  return rows;
+}
+
+function renderMotorSummaryHTML(){
+  const rows = motorSummaryRows();
+  const grandTotal = rows.reduce((s,r)=>s+r.lineTotal, 0);
+  const rowsHTML = rows.map(r => `
+    <tr>
+      <td>${r.idx+1}</td>
+      <td><bdi>${r.code}</bdi></td>
+      <td><bdi>${r.len ? r.len + ' mm' : '—'}</bdi></td>
+      <td><bdi>${fmtPrice(r.list)}</bdi></td>
+      <td>${r.disc ? '<bdi>'+r.disc+'%</bdi>' : '—'}</td>
+      <td><bdi>${r.qty}</bdi></td>
+      <td><bdi>${fmtPrice(r.net)}</bdi></td>
+      <td><bdi>${fmtPrice(r.lineTotal)}</bdi></td>
+    </tr>`).join('');
+  return `
+    <div class="summary-sheet">
+      <div class="summary-sheet-head">
+        <h2>${t('motorSummaryTitle')}</h2>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeSummary()">${t('close')}</button>
+      </div>
+      <div class="summary-table-wrap">
+        <table class="summary-table">
+          <thead><tr>
+            <th>#</th><th>${t('motorModel')}</th><th>${t('motorLength')}</th>
+            <th>${t('list')}</th><th>${t('discountRate')}</th><th>${t('qty')}</th><th>${t('net')}</th><th>${t('lineTotal')}</th>
+          </tr></thead>
+          <tbody>${rowsHTML || `<tr><td colspan="8" class="summary-empty">${t('noMotorLines')}</td></tr>`}</tbody>
+        </table>
+      </div>
+      <div class="summary-grand">
+        <span>${t('motorsTotalLabel')}</span>
+        <span class="summary-grand-value"><bdi>${fmtPrice(grandTotal)}</bdi></span>
+      </div>
+    </div>`;
+}
+
+function openMotorSummary(){
+  const overlay = document.getElementById('summaryOverlay');
+  overlay.innerHTML = renderMotorSummaryHTML();
+  overlay.classList.add('open');
 }
