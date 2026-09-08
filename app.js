@@ -1694,12 +1694,16 @@ function proformaLines(){
         const disc = Number(line.discount)||0;
         const motorDisc = Number(line.motorDiscount)||0;
         const unit = m.price * (100-disc)/100 + (motor ? motor.price * (100-motorDisc)/100 : 0);
-        // Words come from the document's language; the frequency, kW/HP and
-        // millimetre figures are units, the same in both.
+        // Words come from the document's language; the frequency is a unit,
+        // the same in both.
+        //
+        // The pump's rating and overall length are deliberately left off. They
+        // are selection data -- what the app worked out to pick this model --
+        // not what is being sold, and on the buyer's copy they read as a
+        // specification MSP is committing to rather than a consequence of the
+        // duty point.
         const bits = [T.mat[line.material] || line.material, line.frequency];
         if (r.primary.stages) bits.push(r.primary.stages + ' ' + T.dStage);
-        if (m.kw != null) bits.push(m.kw + ' kW / ' + m.hp + ' HP');
-        if (m.len) bits.push('L ' + m.len + ' mm');
         let desc = T.dPump + ', ' + bits.join(', ');
         if (motor) desc += ' + ' + T.dMotor + ' ' + line.motorCode.trim()
                         + ' (' + motor.size + (motor.len ? ', L ' + motor.len + ' mm' : '') + ')';
