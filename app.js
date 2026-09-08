@@ -1398,6 +1398,7 @@ function renderSummarySheet(){
 ` : ''}
         <div class="summary-actions">
           <button type="button" class="btn btn-ghost btn-sm" onclick="downloadSheet()">${t('downloadExcel')}</button>
+          ${proformaMode ? `<button type="button" class="btn btn-ghost btn-sm" onclick="ProformaPDF.download()">${t('downloadPdf')}</button>` : ''}
           <button type="button" class="btn btn-primary btn-sm" onclick="printSummary()">${t('printSheet')}</button>
         </div>
       </div>

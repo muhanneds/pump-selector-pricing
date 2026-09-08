@@ -21,7 +21,7 @@ const STRINGS = {
   en: {
     // --- Summary sheet: combined document, download, print ---
     proformaMode:'Proforma invoice', proformaInvoice:'Proforma Invoice',
-    docLanguage:'Document', stampSignature:'Stamp & signature', docFlowUnit:'Flow', downloadExcel:'Excel',
+    docLanguage:'Document', stampSignature:'Stamp & signature', docFlowUnit:'Flow', downloadExcel:'Excel', downloadPdf:'PDF',
     kpiLines:'Lines', kpiUnits:'Units', kpiSaved:'Discount',
     summaryNote:'Internal quotation summary — not a proforma invoice.',
     nemaColumn:'Suction / NEMA',
@@ -78,7 +78,7 @@ const STRINGS = {
   tr: {
     // --- Özet sayfası: birleşik belge, indirme, yazdırma ---
     proformaMode:'Proforma fatura', proformaInvoice:'Proforma Fatura',
-    docLanguage:'Belge dili', stampSignature:'Kaşe ve imza', docFlowUnit:'Debi', downloadExcel:'Excel',
+    docLanguage:'Belge dili', stampSignature:'Kaşe ve imza', docFlowUnit:'Debi', downloadExcel:'Excel', downloadPdf:'PDF',
     kpiLines:'Satır', kpiUnits:'Adet', kpiSaved:'İskonto',
     summaryNote:'İç teklif özeti — proforma fatura değildir.',
     nemaColumn:'Emme / NEMA',
@@ -135,7 +135,7 @@ const STRINGS = {
   ar: {
     // --- صفحة الملخص: مستند موحّد، تنزيل، طباعة ---
     proformaMode:'فاتورة مبدئية', proformaInvoice:'الفاتورة المبدئية',
-    docLanguage:'لغة المستند', stampSignature:'الختم والتوقيع', docFlowUnit:'التدفق', downloadExcel:'إكسل',
+    docLanguage:'لغة المستند', stampSignature:'الختم والتوقيع', docFlowUnit:'التدفق', downloadExcel:'إكسل', downloadPdf:'PDF',
     kpiLines:'البنود', kpiUnits:'الكمية', kpiSaved:'الخصم',
     summaryNote:'ملخص عرض سعر داخلي — ليس فاتورة مبدئية.',
     nemaColumn:'السحب / NEMA',
@@ -192,7 +192,7 @@ const STRINGS = {
   es: {
     // --- Hoja de resumen: documento combinado, descarga, impresión ---
     proformaMode:'Factura proforma', proformaInvoice:'Factura Proforma',
-    docLanguage:'Documento', stampSignature:'Sello y firma', docFlowUnit:'Caudal', downloadExcel:'Excel',
+    docLanguage:'Documento', stampSignature:'Sello y firma', docFlowUnit:'Caudal', downloadExcel:'Excel', downloadPdf:'PDF',
     kpiLines:'Líneas', kpiUnits:'Unidades', kpiSaved:'Descuento',
     summaryNote:'Resumen interno de la cotización — no es una factura proforma.',
     nemaColumn:'Succión / NEMA',

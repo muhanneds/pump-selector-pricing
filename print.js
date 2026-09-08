@@ -558,3 +558,248 @@ const SummarySheet = (function(){
 
   return { model, download };
 })();
+
+// ============================================================================
+// The proforma as a PDF the app writes itself.
+//
+// Printing through the browser gives a good page but a file whose /Info says
+// Chromium produced it and names no author. This draws the same document and
+// signs it: author, title and producer are ours. See pdf.js for how the
+// Turkish characters survive without embedding a font.
+// ============================================================================
+const PDF_AUTHOR = 'Muhanned S';
+
+const ProformaPDF = (function(){
+
+  const NAVY = '#17375E', RULE = '#C9D3E0', DIM = '#5B6B85', HAIR = '#E4EAF2';
+
+  // Small-caps labels are uppercased in the document's own locale: a plain
+  // toUpperCase() turns "Ödeme Şekli" into "ÖDEME ŞEKLI", losing the dot that
+  // makes it a different letter in Turkish.
+  const up = s => String(s).toLocaleUpperCase(proformaLang === 'tr' ? 'tr-TR' : 'en-US');
+
+  // Column shares, as on the printed page.
+  const SHARES        = [0.042, 0.060, 0.059, 0.066, 0.130, 0.374, 0.063, 0.092, 0.114];
+  const SHARES_NONEMA = [0.042, 0.060, 0.059, 0.130, 0.440, 0.063, 0.092, 0.114];
+
+  function footer(d, T){
+    const line = [PF_FIXED.company, PF_FIXED.address + ' / ' + T.vOrigin, PF_FIXED.contact].join('   ·   ');
+    const y = d.bottom() - 14;
+    d.line(d.left(), y, d.right(), y, RULE, 0.5);
+    d.text(line, d.left(), y + 4, { size:6.5, color:'#93A1B8', align:'center', w:d.width() });
+  }
+
+  function masthead(d, T, logo){
+    const x = d.left(), w = d.width();
+    const y = d.top();
+    // The mark, then the name under it -- the name was sitting on top of the
+    // logo, because it was placed at a guessed offset rather than the logo's
+    // actual height.
+    const logoW = 92;
+    const logoH = logo ? logoW * logo.h / logo.w : 0;
+    if (logo) d.image('Logo', x, y, logoW, logoH);
+    d.text(PF_FIXED.company, x, y + logoH + 4, { size:7.5, bold:true, color:NAVY });
+
+    d.text(T.title, x, y + 2, { size:17, bold:true, color:NAVY, align:'right', w });
+    let my = y + 26;
+    [[T.piNo, pfDoc.piNo], [T.date, pfDate(pfDoc.date)], [T.origin, T.vOrigin]].forEach(([l, v]) => {
+      if (!v) return;
+      const vw = PDF.widthOf(v, 7.5, false);
+      d.text(v, x, my, { size:7.5, align:'right', w });
+      d.text(l, x, my, { size:7.5, color:DIM, align:'right', w: w - vw - 5 });
+      my += 11;
+    });
+    const bottom = Math.max(y + logoH + 16, my + 2);
+    d.rect(x, bottom, w, 1.6, NAVY);
+    return bottom + 10;
+  }
+
+  // The two parties, side by side, each in a bordered card with a navy edge.
+  function parties(d, T, y){
+    const x = d.left(), w = d.width(), gap = 12, cw = (w - gap) / 2, pad = 6;
+    const left = [
+      [T.applicant, pfDoc.applicant || '—', true],
+      [null, pfDoc.applicantAdd, false],
+      [null, [pfDoc.tel, pfDoc.email].filter(Boolean).join('   ·   '), false]
+    ];
+    const right = [
+      [T.beneficiary, PF_FIXED.beneficiary, true],
+      [null, PF_FIXED.beneficiaryAdd, false]
+    ];
+    const measure = rows => {
+      let h = pad + 9;
+      rows.forEach(([, v, big]) => { if (v) h += big ? 13 : d.heightOf(v, cw - pad*2, {size:7.5}); });
+      return h + pad;
+    };
+    const h = Math.max(measure(left), measure(right));
+    [[x, left], [x + cw + gap, right]].forEach(pair => {
+      const bx = pair[0], rows = pair[1];
+      d.box(bx, y, cw, h, RULE, 0.6);
+      d.rect(bx, y, 2.2, h, NAVY);
+      let ty = y + pad;
+      rows.forEach(([label, v, big]) => {
+        if (label){
+          d.text(up(label.replace(/:\s*$/, '')), bx + pad, ty, { size:6.5, bold:true, color:DIM });
+          ty += 9;
+        }
+        if (!v) return;
+        if (big){ d.text(v, bx + pad, ty, { size:10.5, bold:true, color:NAVY }); ty += 13; }
+        else ty += d.paragraph(v, bx + pad, ty, cw - pad*2, { size:7.5 });
+      });
+    });
+    return y + h + 10;
+  }
+
+  function tableHeader(d, T, y, cols, xs){
+    const heads = cols.nema
+      ? [T.colNo, pfFlowHeader(), T.colHm, T.colSuction, T.colCode, T.colDesc, T.colQty, T.colUnitFlat, T.colTotalFlat]
+      : [T.colNo, pfFlowHeader(), T.colHm, T.colCode, T.colDesc, T.colQty, T.colUnitFlat, T.colTotalFlat];
+    const h = 20;
+    d.rect(d.left(), y, d.width(), h, NAVY);
+    heads.forEach((txt, i) => {
+      const lines = PDF.wrap(txt, 6.5, true, cols.w[i] - 6).slice(0, 2);
+      const top = lines.length > 1 ? y + 3 : y + 6.5;
+      lines.forEach((ln, k) =>
+        d.text(ln, xs[i] + 3, top + k * 7.5, { size:6.5, bold:true, color:'#FFFFFF' }));
+    });
+    return y + h;
+  }
+
+  async function build(){
+    const T = pfT();
+    const nema = proformaNema;
+    const shares = nema ? SHARES : SHARES_NONEMA;
+    const lines = proformaLines();
+    const cents = v => Math.round(Number(v) * 100) / 100;
+
+    const logo = await PDF.loadJpeg('app-icons/msp-logo-flat.png', '#FFFFFF');
+    const stamp = proformaStamp ? await PDF.loadJpeg('app-icons/msp-stamp.jpg', '#FFFFFF') : null;
+
+    const d = new PDF.Doc({ info: {
+      Title: T.title + (pfDoc.piNo ? ' ' + pfDoc.piNo : ''),
+      Author: PDF_AUTHOR,
+      Subject: PF_FIXED.company + ' - ' + T.title
+    }});
+    d.addImage('Logo', logo);
+    if (stamp) d.addImage('Stamp', stamp);
+
+    const W = d.width();
+    const cols = { nema, w: shares.map(s => s * W) };
+    const xs = [];
+    let acc = d.left();
+    cols.w.forEach(w => { xs.push(acc); acc += w; });
+
+    let y = masthead(d, T, logo);
+    y = parties(d, T, y);
+
+    d.rect(d.left(), y, W, 14, NAVY);
+    d.text(T.description, d.left() + 5, y + 3.5, { size:7, bold:true, color:'#FFFFFF' });
+    y += 14;
+    y = tableHeader(d, T, y, cols, xs);
+
+    const descIdx = nema ? 5 : 4;
+    const rowValues = r => nema
+      ? [String(r.q), String(r.hm), r.suction, r.code, r.desc, String(r.qty),
+         pfMoney(cents(r.unit)), pfMoney(cents(r.total))]
+      : [String(r.q), String(r.hm), r.code, r.desc, String(r.qty),
+         pfMoney(cents(r.unit)), pfMoney(cents(r.total))];
+
+    lines.forEach((r, i) => {
+      const vals = rowValues(r);
+      // The row is as tall as its tallest cell. The product code wraps as well
+      // as the description -- drawn on one line it ran straight through the
+      // column border and into the description beside it.
+      const rowH = Math.max(16,
+        d.heightOf(r.desc, cols.w[descIdx] - 6, { size:7 }) + 7,
+        d.heightOf(r.code, cols.w[descIdx-1] - 6, { size:7, bold:true }) + 7);
+      // A line item never straddles a page.
+      if (y + rowH > d.bottom() - 24){
+        footer(d, T);
+        d.newPage();
+        y = tableHeader(d, T, d.top(), cols, xs);
+      }
+      d.text(String(i + 1), xs[0], y + 4, { size:7, color:'#93A1B8', align:'center', w:cols.w[0] });
+      vals.forEach((v, k) => {
+        const ci = k + 1;
+        const isMoney = ci >= cols.w.length - 2;
+        const isCode = ci === descIdx - 1;
+        if (ci === descIdx){ d.paragraph(v, xs[ci] + 3, y + 4, cols.w[ci] - 6, { size:7 }); return; }
+        if (isCode){ d.paragraph(v, xs[ci] + 3, y + 4, cols.w[ci] - 6, { size:7, bold:true, color:NAVY }); return; }
+        d.text(v, xs[ci] + (isMoney ? 0 : 3), y + 4, {
+          size:7, bold:isCode, color:isCode ? NAVY : '#000000',
+          align: isMoney ? 'right' : (ci < descIdx - 1 ? 'center' : undefined),
+          w: isMoney ? cols.w[ci] - 3 : cols.w[ci]
+        });
+      });
+      y += rowH;
+      d.line(d.left(), y, d.right(), y, RULE, 0.4);
+    });
+
+    // --- the total, in figures and in words ---
+    const words = Print.amountInWords(proformaTotal(), proformaLang);
+    const boxW = 150, wordsW = W - boxW;
+    const totalH = Math.max(34, d.heightOf(words, wordsW - 12, { size:8, bold:true }) + 20);
+    if (y + totalH > d.bottom() - 24){ footer(d, T); d.newPage(); y = d.top(); }
+    d.box(d.left(), y, wordsW, totalH, NAVY, 0.8);
+    d.text(up(T.amountInWords), d.left() + 6, y + 5, { size:6, bold:true, color:DIM });
+    d.paragraph(words, d.left() + 6, y + 14, wordsW - 12, { size:8, bold:true });
+    d.rect(d.left() + wordsW, y, boxW, totalH, NAVY);
+    d.text(T.total, d.left() + wordsW, y + 6, { size:6, bold:true, color:'#C4D2E6', align:'right', w:boxW - 8 });
+    d.text(pfMoney(cents(proformaTotal())), d.left() + wordsW, y + 15,
+           { size:14, bold:true, color:'#FFFFFF', align:'right', w:boxW - 8 });
+    y += totalH + 12;
+
+    // --- terms and bank, two columns ---
+    const gap = 14, colW = (W - gap) / 2;
+    const terms = [
+      [T.paymentTerm, pfDoc.paymentTerm], [T.deliveryTime, pfDoc.deliveryTime],
+      [T.shipmentTerms, pfDoc.shipmentTerms], [T.packing, T.vPacking],
+      [T.brandName, PF_FIXED.brand], [T.hsCode, T.vHsCode]
+    ];
+    const bank = [
+      [T.bank, PF_FIXED.bank], [T.swift, PF_FIXED.swift], [T.iban, PF_FIXED.iban],
+      [T.bankBeneficiary, PF_FIXED.beneficiary], [T.originCaps, T.vOrigin]
+    ];
+    const drawCol = (rows, x, startY) => {
+      let ty = startY;
+      const labelW = 74;
+      rows.forEach(([l, v]) => {
+        const vw = colW - labelW - 4;
+        const h = Math.max(11, d.heightOf(v || '', vw, { size:7.5 }) + 3);
+        d.text(up(l), x, ty + 1, { size:6.5, bold:true, color:DIM });
+        d.paragraph(v || '', x + labelW, ty, vw, { size:7.5 });
+        ty += h;
+        d.line(x, ty - 1, x + colW, ty - 1, HAIR, 0.4);
+      });
+      return ty;
+    };
+    const need = Math.max(terms.length, bank.length) * 20 + 16;
+    if (y + need > d.bottom() - 24){ footer(d, T); d.newPage(); y = d.top(); }
+    y = Math.max(drawCol(terms, d.left(), y), drawCol(bank, d.left() + colW + gap, y)) + 16;
+
+    // --- signature ---
+    if (y + 80 > d.bottom() - 24){ footer(d, T); d.newPage(); y = d.top(); }
+    if (stamp){
+      const sw = 150, sh = 150 * stamp.h / stamp.w;
+      d.image('Stamp', d.right() - sw, y, sw, sh);
+      y += sh - 6;
+    } else {
+      y += 28;
+    }
+    d.line(d.right() - 170, y + 14, d.right(), y + 14, '#93A1B8', 0.6);
+    d.text(T.stampSign, d.left(), y + 18, { size:7.5, color:DIM, align:'right', w:W });
+
+    footer(d, T);
+    return d;
+  }
+
+  async function download(){
+    const d = await build();
+    const name = 'MSP-' + (proformaLang === 'tr' ? 'Proforma-Fatura' : 'Proforma-Invoice')
+      + (pfDoc.piNo ? '-' + pfDoc.piNo.trim().replace(/\s+/g, '') : '') + '.pdf';
+    PDF.download(name, d.save());
+    toast(t('downloaded'));
+  }
+
+  return { build, download };
+})();
