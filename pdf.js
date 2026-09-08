@@ -72,6 +72,19 @@ const PDF = (function(){
     return out;
   }
 
+  // The declared width of every code the encoding can produce, in the order a
+  // /Widths array wants them.
+  const FIRST_CHAR = 32;
+  const LAST_CHAR = EXTRA.reduce((m, e) => Math.max(m, e[1]), 126);
+  function widthArray(bold){
+    const tbl = bold ? W_BOLD : W_REG;
+    const out = [];
+    for (let c = FIRST_CHAR; c <= LAST_CHAR; c++){
+      out.push(c <= 126 ? tbl[c - 32] : (WIDTH_EXTRA[c] || 0));
+    }
+    return out.join(' ');
+  }
+
   function widthOf(str, size, bold){
     const tbl = bold ? W_BOLD : W_REG;
     let w = 0;
@@ -296,9 +309,18 @@ const PDF = (function(){
     obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
     obj(2, `<< /Type /Pages /Count ${nPages} /Kids [${kids}] >>`);
 
+    // The font carries the same widths this file was laid out with. Without a
+    // /Widths array a viewer falls back to its own metrics for whatever font it
+    // substitutes for Helvetica, and those disagree with ours -- so when the
+    // text is copied out, the extractor invents a space wherever it thinks a
+    // gap opened and drops one wherever it thinks glyphs touch. That is where
+    // "AM OUNT IN W ORDS" and "ONETHOUSAND" came from: the page looked right,
+    // but the text underneath it did not.
     const enc = `<< /Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences ${DIFFERENCES} >>`;
-    obj(3, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding ${enc} >>`);
-    obj(4, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding ${enc} >>`);
+    obj(3, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding ${enc} `
+         + `/FirstChar ${FIRST_CHAR} /LastChar ${LAST_CHAR} /Widths [${widthArray(false)}] >>`);
+    obj(4, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding ${enc} `
+         + `/FirstChar ${FIRST_CHAR} /LastChar ${LAST_CHAR} /Widths [${widthArray(true)}] >>`);
 
     const now = pdfDate(new Date());
     const info = Object.entries(this.info)
