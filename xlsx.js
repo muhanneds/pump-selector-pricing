@@ -226,8 +226,19 @@ ${merges}
 </worksheet>`;
   }
 
+  // Whoever the workbook says wrote it. A file that leaves the building with a
+  // blank author, or carrying the name of whatever tool produced it, looks
+  // like it came from nowhere; these are MSP's documents and they say so.
+  let AUTHOR = 'Muhanned S';
+  let COMPANY = 'MSP Teknik Makina San. Tic. A.S.';
+  function setAuthor(name, company){
+    if (name) AUTHOR = name;
+    if (company) COMPANY = company;
+  }
+
   function build(model, sheetName){
     const name = (sheetName || 'Sheet1').slice(0, 31).replace(/[\\\/\?\*\[\]:]/g, '-');
+    const stamp = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     return zip([
       { name:'[Content_Types].xml', data:
 `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -237,11 +248,15 @@ ${merges}
 <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
 <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
 <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
 </Types>` },
       { name:'_rels/.rels', data:
 `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
 </Relationships>` },
       { name:'xl/workbook.xml', data:
 `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -254,6 +269,21 @@ ${merges}
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
 <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 </Relationships>` },
+      { name:'docProps/core.xml', data:
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<dc:creator>${x(AUTHOR)}</dc:creator>
+<cp:lastModifiedBy>${x(AUTHOR)}</cp:lastModifiedBy>
+<dc:title>${x(sheetName || '')}</dc:title>
+<dcterms:created xsi:type="dcterms:W3CDTF">${stamp}</dcterms:created>
+<dcterms:modified xsi:type="dcterms:W3CDTF">${stamp}</dcterms:modified>
+</cp:coreProperties>` },
+      { name:'docProps/app.xml', data:
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
+<Application>MSP Pump Selector</Application>
+<Company>${x(COMPANY)}</Company>
+</Properties>` },
       { name:'xl/styles.xml', data: stylesXml() },
       { name:'xl/worksheets/sheet1.xml', data: sheetXml(model) }
     ]);
@@ -271,5 +301,5 @@ ${merges}
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
 
-  return { build, download, STYLE, COL, REF };
+  return { build, download, setAuthor, STYLE, COL, REF };
 })();

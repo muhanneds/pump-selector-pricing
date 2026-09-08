@@ -463,3 +463,98 @@ const ProformaSheet = (function(){
 
   return { model, download };
 })();
+
+// The summary as a workbook. Same machinery as the proforma, but the internal
+// sheet: what was selected, at what discount, for how much — and it says on
+// its face that it is not something to pay against.
+const SummarySheet = (function(){
+  const COLS = [5.14, 34, 14, 14, 8, 13, 14];
+
+  function model(){
+    const S = XLSX.STYLE;
+    const W = COLS.length;
+    const LAST = XLSX.COL(W - 1);
+    const rows = [], merges = [];
+    const st = summaryStats();
+    const secs = summarySections();
+
+    function band(text, style, h){
+      const cells = new Array(W).fill(null).map(() => ({ v:'', s:style }));
+      cells[0] = { v:text, s:style };
+      merges.push(`A${rows.length+1}:${LAST}${rows.length+1}`);
+      rows.push({ cells, h });
+    }
+    // A money value goes in as a number under the currency format; everything
+    // else as it comes.
+    function pair(label, value, asMoney){
+      const cells = new Array(W).fill(null).map((_, i) => ({ v:'', s: i === 0 ? S.LABEL : S.VALUE }));
+      cells[0] = { v:label, s:S.LABEL };
+      cells[1] = asMoney
+        ? { v:value, s:S.TD_MONEY, n:true }
+        : { v:(value === 0 ? 0 : (value || '')), s:S.VALUE, n: typeof value === 'number' };
+      merges.push(`${XLSX.COL(1)}${rows.length+1}:${LAST}${rows.length+1}`);
+      rows.push({ cells });
+    }
+
+    band(PF_FIXED.company, S.LETTERHEAD, 20);
+    band(secs.length > 1 ? t('proformaTitle')
+       : (summaryPrimary === 'tender' ? t('summaryTitle') : t('motorSummaryTitle')), S.TITLE, 24);
+    pair(t('custApplicant'), pfDoc.applicant);
+    pair(t('custDate'), pfDate(pfDoc.date));
+    rows.push({ cells:new Array(W).fill(null) });
+
+    // The headline figures. They were a strip of five columns, which put
+    // "Tender total (after discount)" in an eight-character column; as
+    // label/value pairs they take the same shape as everything above them and
+    // the labels have the room they need.
+    const money = n => Math.round(Number(n) * 100) / 100;
+    pair(t('kpiLines'), st.lines);
+    pair(t('kpiUnits'), st.units);
+    pair(t('list'), money(st.list), true);
+    pair(t('kpiSaved'), st.pct + '%');
+    rows.push({ cells:new Array(W).fill(null) });
+
+    function section(heading, list, cells){
+      if (!list.length) return;
+      band(heading, S.BAND, 18);
+      rows.push({ cells: ['#', t('selectedModel'), t('list'), t('discountRate'), t('qty'), t('net'), t('lineTotal')]
+        .map(v => ({ v, s:S.TH })), h:26 });
+      list.forEach(r => rows.push({ cells: cells(r) }));
+    }
+
+    const cents = n => Math.round(Number(n) * 100) / 100;
+    if (secs.includes('tender')) section(t('tender'), summaryRows(), r => ([
+      { v:r.idx+1, s:S.TD_C, n:true }, { v:r.model, s:S.TD },
+      { v:cents(r.price), s:S.TD_MONEY, n:true }, { v:r.disc, s:S.TD_C },
+      { v:r.qty, s:S.TD_C, n:true }, { v:cents(r.net), s:S.TD_MONEY, n:true },
+      { v:cents(r.lineTotal), s:S.TD_MONEY, n:true }
+    ]));
+    if (secs.includes('motors')) section(t('tabMotors'), motorSummaryRows(), r => ([
+      { v:r.idx+1, s:S.TD_C, n:true }, { v:r.code + (r.len ? '  ·  ' + r.len + ' mm' : ''), s:S.TD },
+      { v:cents(r.list), s:S.TD_MONEY, n:true }, { v:r.disc ? r.disc + '%' : '—', s:S.TD_C },
+      { v:r.qty, s:S.TD_C, n:true }, { v:cents(r.net), s:S.TD_MONEY, n:true },
+      { v:cents(r.lineTotal), s:S.TD_MONEY, n:true }
+    ]));
+
+    {
+      const cells = new Array(W).fill(null).map(() => ({ v:'', s:S.TOTAL_L }));
+      cells[W-2] = { v: secs.length > 1 ? t('grandTotal') : t('tenderTotalLabel'), s:S.TOTAL_L };
+      cells[W-1] = { v: cents(st.net), s:S.TOTAL_V, n:true };
+      merges.push(`A${rows.length+1}:${XLSX.COL(W-3)}${rows.length+1}`);
+      rows.push({ cells, h:20 });
+    }
+    rows.push({ cells:new Array(W).fill(null) });
+    band(t('summaryNote'), S.LABEL, 18);
+
+    return { cols:COLS, rows, merges };
+  }
+
+  function download(){
+    const name = 'MSP-' + (summarySections().length > 1 ? 'Summary' : summaryPrimary)
+      + '-' + new Date().toISOString().slice(0,10) + '.xlsx';
+    XLSX.download(name, model(), t('summaryTitle'));
+    toast(t('downloaded'));
+  }
+
+  return { model, download };
+})();

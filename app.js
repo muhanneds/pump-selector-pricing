@@ -1397,8 +1397,7 @@ function renderSummarySheet(){
         </div>
 ` : ''}
         <div class="summary-actions">
-          ${proformaMode ? `<button type="button" class="btn btn-ghost btn-sm" onclick="ProformaSheet.download()">${t('downloadExcel')}</button>` : ''}
-          <button type="button" class="btn btn-ghost btn-sm" onclick="downloadSummaryCSV()">${t('downloadCsv')}</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="downloadSheet()">${t('downloadExcel')}</button>
           <button type="button" class="btn btn-primary btn-sm" onclick="printSummary()">${t('printSheet')}</button>
         </div>
       </div>
@@ -1415,54 +1414,12 @@ function showSummary(primary){
 
 // --- taking it away -------------------------------------------------------
 
-// Excel opens a bare comma file in the system codepage, which mangles Turkish
-// and Arabic headers, so the BOM goes in front. Any field can contain a comma
-// or a quote, so every field is quoted and inner quotes doubled.
-function csvCell(v){
-  const s = (v === null || v === undefined) ? '' : String(v);
-  return '"' + s.replace(/"/g, '""') + '"';
-}
-
-function summaryCSVRows(){
-  const out = [];
-  for (const sec of summarySections()){
-    if (sec === 'tender'){
-      out.push([t('tender')]);
-      out.push(['#', t('selectedModel'), t('list'), t('discountRate'), t('qty'), t('net'), t('lineTotal')]);
-      summaryRows().forEach(r => out.push([r.idx+1, r.model, r.price, r.disc, r.qty, r.net, r.lineTotal]));
-    } else {
-      out.push([t('tabMotors')]);
-      out.push(['#', t('motorModel'), t('motorLength'), t('list'), t('discountRate'), t('qty'), t('net'), t('lineTotal')]);
-      motorSummaryRows().forEach(r => out.push([r.idx+1, r.code, r.len || '', r.list, r.disc ? r.disc + '%' : '', r.qty, r.net, r.lineTotal]));
-    }
-    out.push([]);
-  }
-  out.push([summarySections().length > 1 ? t('grandTotal')
-          : (summaryPrimary === 'tender' ? t('tenderTotalLabel') : t('motorsTotalLabel')),
-          summaryGrandTotal()]);
-  return out;
-}
-
-function downloadSummaryCSV(){
-  const rows = proformaMode ? proformaCSVRows() : summaryCSVRows();
-  const csv = rows.map(row => row.map(csvCell).join(',')).join('\r\n');
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  // The English and Turkish copies are two files of the same proforma, so the
-  // document's language goes in the name -- otherwise the second export lands
-  // as "(1)" and the two are told apart only by opening them.
-  a.download = 'msp-' + (proformaMode ? 'proforma-invoice-' + proformaLang
-             : (summarySections().length > 1 ? 'proforma' : summaryPrimary))
-             + '-' + new Date().toISOString().slice(0,10) + '.csv';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // Revoked on a delay: revoking synchronously can cancel the download in
-  // some browsers before it has read the blob.
-  setTimeout(()=> URL.revokeObjectURL(url), 4000);
-  toast(t('downloaded'));
+// Both documents leave as a workbook. CSV was here first and was dropped: it
+// cannot carry a column width, a merged cell, a border or a number format, so
+// the sheet it produced had to be laid out by hand before it could go to
+// anyone -- and everything it could carry, the .xlsx carries too.
+function downloadSheet(){
+  if (proformaMode) ProformaSheet.download(); else SummarySheet.download();
 }
 
 // Printing never touches what is on screen: print.js builds a document made
@@ -1946,96 +1903,4 @@ function proformaHTML(){
 // close enough to the workbook to be pasted straight into it. It carries the
 // document's language, not the app's, for the same reason the printed page
 // does: the two copies have to say the same thing.
-// The CSV opened in Excel has to look like the PI sheet, which means the
-// label/value rows have to line up with the line table under them. On the
-// sheet a label occupies A:D and its value starts at E, so that is where the
-// values go here too -- putting them in B, as this used to, left the whole
-// header block sitting under the Q and Hm columns and reading as ragged.
-function proformaCSVRows(){
-  const T = pfT();
-  const out = [];
-  const nema = proformaNema;
-  const width = nema ? 9 : 8;          // A..I with the NEMA column, A..H without
-  const VALUE_COL = 4;                 // column E, as on the sheet
-
-  // A label/value line: label in A, value in E, the row padded to the table's
-  // width so every row in the file has the same number of fields.
-  function row(label, value){
-    const r = new Array(width).fill('');
-    r[0] = label === null || label === undefined ? '' : label;
-    if (value !== null && value !== undefined && value !== '') r[VALUE_COL] = value;
-    return r;
-  }
-  function band(text){
-    const r = new Array(width).fill('');
-    r[0] = text;
-    return r;
-  }
-  const blank = () => new Array(width).fill('');
-
-  out.push(band(PF_FIXED.company));
-  out.push(row(PF_FIXED.address + ' / ' + T.vOrigin, PF_FIXED.contact));
-  out.push(band(T.title));
-  out.push(blank());
-  out.push(row(T.applicant, pfDoc.applicant));
-  out.push(row(T.applicantAdd, pfDoc.applicantAdd));
-  out.push(row(T.beneficiary, PF_FIXED.beneficiary));
-  out.push(row(T.beneficiaryAdd, PF_FIXED.beneficiaryAdd));
-  out.push(row(T.tel, pfDoc.tel));
-  out.push(row(T.email, pfDoc.email));
-  // Number and date are their own rows rather than sharing one. Sharing meant
-  // "Date" landing under whichever column happened to be seventh, which moved
-  // when the NEMA column did.
-  out.push(row(T.piNo, pfDoc.piNo));
-  out.push(row(T.date, pfDate(pfDoc.date)));
-  out.push(blank());
-  out.push(band(T.description));
-
-  // The figures stay raw so Excel can sum them; the currency goes in the
-  // heading instead of in front of every number.
-  const unitCol = T.colUnitFlat + ' (' + PF_CURRENCY_CODE + ')';
-  const totalCol = T.colTotalFlat + ' (' + PF_CURRENCY_CODE + ')';
-  out.push(nema
-    ? [T.colNo, pfFlowHeader(), T.colHm, T.colSuction, T.colCode, T.colDesc, T.colQty, unitCol, totalCol]
-    : [T.colNo, pfFlowHeader(), T.colHm, T.colCode, T.colDesc, T.colQty, unitCol, totalCol]);
-  // Money is rounded to the cent. The engine's own figures carry a long tail
-  // from the discount arithmetic (891.053414375), and a price on an invoice
-  // that does not match the one on the printed page to the cent is a defect,
-  // however small the difference.
-  const cents = n => Math.round(Number(n) * 100) / 100;
-  proformaLines().forEach(function(r,i){
-    out.push(nema
-      ? [i+1, r.q, r.hm, r.suction, r.code, r.desc, r.qty, cents(r.unit), cents(r.total)]
-      : [i+1, r.q, r.hm, r.code, r.desc, r.qty, cents(r.unit), cents(r.total)]);
-  });
-
-  // TOTAL sits in the last column but one, directly beside its figure, so the
-  // two read together however many columns the table has.
-  const totalRow = new Array(width).fill('');
-  totalRow[width-2] = T.total;
-  totalRow[width-1] = cents(proformaTotal());
-  out.push(totalRow);
-  // The amount in words is on the printed document; the file should not say
-  // less than the paper does.
-  out.push(row(T.amountInWords, Print.amountInWords(proformaTotal(), proformaLang)));
-
-  out.push(blank());
-  out.push(row(T.paymentTerm, pfDoc.paymentTerm));
-  out.push(row(T.deliveryTime, pfDoc.deliveryTime));
-  out.push(row(T.origin, T.vOrigin));
-  out.push(row(T.shipmentTerms, pfDoc.shipmentTerms));
-  out.push(row(T.hsCode, T.vHsCode));
-  out.push(row(T.packing, T.vPacking));
-  out.push(row(T.brandName, PF_FIXED.brand));
-  out.push(blank());
-  out.push(band(T.bankInfo));
-  out.push(row(T.bank, PF_FIXED.bank));
-  out.push(row(T.branch, PF_FIXED.branch));
-  out.push(row(T.swift, PF_FIXED.swift));
-  out.push(row(T.iban, PF_FIXED.iban));
-  out.push(row(T.bankBeneficiary, PF_FIXED.beneficiary));
-  out.push(row(T.bankBeneficiaryAdd, PF_FIXED.beneficiaryAdd));
-  out.push(row(T.originCaps, T.vOrigin));
-  return out;
-}
 
