@@ -315,3 +315,151 @@ const Print = (function(){
 
   return { proforma, summary, amountInWords };
 })();
+
+// ============================================================================
+// The proforma as a real spreadsheet.
+//
+// The CSV carries the same values but none of the shape: no column widths, no
+// merged label bands, no borders, no fills, no money format. Opened in Excel
+// it had to be laid out by hand every time before it could go anywhere. This
+// builds the sheet the workbook's PI page actually looks like, using the
+// workbook's own column widths, and hands Excel numbers it can still sum.
+// ============================================================================
+const ProformaSheet = (function(){
+
+  // The PI sheet's own column widths, in characters, straight off the
+  // workbook: A 5.14 … I 12.57.
+  const COLS       = [5.14, 7.43, 7.29, 8.14, 16, 47, 7.71, 10.57, 12.57];
+  // Without the NEMA column its width goes to the description, so the page
+  // keeps its overall measure.
+  const COLS_NONEMA = [5.14, 7.43, 7.29, 16, 55.14, 7.71, 10.57, 12.57];
+
+  function model(){
+    const T = pfT();
+    const S = XLSX.STYLE;
+    const nema = proformaNema;
+    const cols = nema ? COLS : COLS_NONEMA;
+    const W = cols.length;                 // 9 with NEMA, 8 without
+    const LAST = XLSX.COL(W - 1);          // "I" or "H"
+    const VALUE_COL = 4;                   // column E, as on the sheet
+
+    const rows = [];
+    const merges = [];
+    const at = () => rows.length;          // the row about to be written
+
+    // A run of styled cells, so a merged band still draws its borders.
+    function fill(style, from, to){
+      const cells = new Array(W).fill(null);
+      for (let c = from; c <= to; c++) cells[c] = { v:'', s:style };
+      return cells;
+    }
+
+    // Full-width band: one value across every column.
+    function band(text, style, h){
+      const cells = fill(style, 0, W-1);
+      cells[0] = { v:text, s:style };
+      merges.push(`A${at()+1}:${LAST}${at()+1}`);
+      rows.push({ cells, h });
+    }
+
+    // Label in A:D, value in E:last — the sheet's own arrangement.
+    function pair(label, value, h){
+      const cells = fill(S.LABEL, 0, VALUE_COL-1).map((c,i) => i < VALUE_COL ? c : null);
+      cells[0] = { v:label, s:S.LABEL };
+      for (let c = VALUE_COL; c < W; c++) cells[c] = { v:'', s:S.VALUE };
+      cells[VALUE_COL] = { v:value || '', s:S.VALUE };
+      const r = at() + 1;
+      merges.push(`A${r}:${XLSX.COL(VALUE_COL-1)}${r}`);
+      merges.push(`${XLSX.COL(VALUE_COL)}${r}:${LAST}${r}`);
+      rows.push({ cells, h });
+    }
+
+    // --- letterhead ---
+    band(PF_FIXED.company, S.LETTERHEAD, 22);
+    band(PF_FIXED.address + ' / ' + T.vOrigin + '   ·   ' + PF_FIXED.contact, S.LETTERHEAD, 18);
+    band(T.title, S.TITLE, 26);
+
+    // --- the parties, and the document's own numbers ---
+    pair(T.applicant, pfDoc.applicant);
+    pair(T.applicantAdd, pfDoc.applicantAdd, 30);
+    pair(T.beneficiary, PF_FIXED.beneficiary);
+    pair(T.beneficiaryAdd, PF_FIXED.beneficiaryAdd, 30);
+    pair(T.tel, pfDoc.tel);
+    pair(T.email, pfDoc.email);
+    pair(T.piNo, pfDoc.piNo);
+    pair(T.date, pfDate(pfDoc.date));
+
+    band(T.description, S.BAND, 18);
+
+    // --- the lines ---
+    const header = nema
+      ? [T.colNo, pfFlowHeader(), T.colHm, T.colSuction, T.colCode, T.colDesc, T.colQty, T.colUnitFlat, T.colTotalFlat]
+      : [T.colNo, pfFlowHeader(), T.colHm, T.colCode, T.colDesc, T.colQty, T.colUnitFlat, T.colTotalFlat];
+    rows.push({ cells: header.map(v => ({ v, s:S.TH })), h:30 });
+
+    // Rounded to the cent, like the printed page and the CSV. The engine's
+    // own figures carry a tail from the discount arithmetic, and a sheet that
+    // sums to a different total than the document states is worse than useless.
+    const cents = n => Math.round(Number(n) * 100) / 100;
+    proformaLines().forEach((r, i) => {
+      const c = nema
+        ? [[i+1,S.TD_C],[r.q,S.TD_C],[r.hm,S.TD_C],[r.suction,S.TD_C],[r.code,S.TD],[r.desc,S.TD],
+           [r.qty,S.TD_C],[cents(r.unit),S.TD_MONEY],[cents(r.total),S.TD_MONEY]]
+        : [[i+1,S.TD_C],[r.q,S.TD_C],[r.hm,S.TD_C],[r.code,S.TD],[r.desc,S.TD],
+           [r.qty,S.TD_C],[cents(r.unit),S.TD_MONEY],[cents(r.total),S.TD_MONEY]];
+      // Money and counts go in as numbers so the sheet still adds up; the duty
+      // point does too, when it is one.
+      rows.push({ cells: c.map(([v, s]) => {
+        const numeric = s === S.TD_MONEY || (s === S.TD_C && v !== '' && !isNaN(Number(v)));
+        return { v, s, n: numeric };
+      }) });
+    });
+
+    // --- total ---
+    {
+      const cells = fill(S.TOTAL_L, 0, W-1);
+      cells[0] = { v:'', s:S.TOTAL_L };
+      cells[W-2] = { v:T.total, s:S.TOTAL_L };
+      cells[W-1] = { v:Math.round(proformaTotal()*100)/100, s:S.TOTAL_V, n:true };
+      const r = at() + 1;
+      merges.push(`A${r}:${XLSX.COL(W-3)}${r}`);
+      rows.push({ cells, h:20 });
+    }
+    pair(T.amountInWords, Print.amountInWords(proformaTotal(), proformaLang), 20);
+
+    rows.push({ cells: new Array(W).fill(null) });
+
+    // --- terms ---
+    pair(T.paymentTerm, pfDoc.paymentTerm);
+    pair(T.deliveryTime, pfDoc.deliveryTime);
+    pair(T.origin, T.vOrigin);
+    pair(T.shipmentTerms, pfDoc.shipmentTerms);
+    pair(T.hsCode, T.vHsCode, 30);
+    pair(T.packing, T.vPacking);
+    pair(T.brandName, PF_FIXED.brand);
+
+    rows.push({ cells: new Array(W).fill(null) });
+
+    // --- bank ---
+    band(T.bankInfo, S.BAND, 20);
+    pair(T.bank, PF_FIXED.bank);
+    pair(T.branch, PF_FIXED.branch);
+    pair(T.swift, PF_FIXED.swift);
+    pair(T.iban, PF_FIXED.iban);
+    pair(T.bankBeneficiary, PF_FIXED.beneficiary);
+    pair(T.bankBeneficiaryAdd, PF_FIXED.beneficiaryAdd, 30);
+    pair(T.originCaps, T.vOrigin);
+
+    return { cols, rows, merges };
+  }
+
+  function download(){
+    const name = 'MSP-' + (proformaLang === 'tr' ? 'Proforma-Fatura' : 'Proforma-Invoice')
+      + (pfDoc.piNo ? '-' + pfDoc.piNo.trim().replace(/\s+/g,'') : '')
+      + '.xlsx';
+    XLSX.download(name, model(), pfT().title);
+    toast(t('downloaded'));
+  }
+
+  return { model, download };
+})();
