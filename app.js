@@ -929,8 +929,25 @@ document.getElementById('motorCodeList').innerHTML =
 renderChrome();
 render();
 
+// The worker serves the app shell cache-first, which is what makes it work
+// offline -- and what made a new version take two visits to appear: the first
+// load installed it, the page you were looking at was still the old one, and
+// nothing said so. It calls skipWaiting(), so a new worker takes control as
+// soon as it installs; controllerchange is that moment, and the page reloads
+// once to pick up the files that came with it.
+//
+// The guard matters: controllerchange also fires the first time a worker ever
+// takes control of a page that had none, and reloading there would be a reload
+// on first visit for no reason.
 if ('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+      if (!hadController || reloading) return;
+      reloading = true;
+      window.location.reload();
+    });
     navigator.serviceWorker.register('service-worker.js').catch(()=>{});
   });
 }
