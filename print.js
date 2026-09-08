@@ -158,7 +158,7 @@ const Print = (function(){
           <colgroup>${cols.map(w => `<col style="width:${w}%">`).join('')}</colgroup>
           <thead><tr>
             <th class="p-c">${esc(T.colNo)}</th>
-            <th class="p-c">${esc(T.colQ)}</th>
+            <th class="p-c">${esc(pfFlowHeader())}</th>
             <th class="p-c">${esc(T.colHm)}</th>
             ${nema ? `<th class="p-c">${esc(T.colSuction)}</th>` : ''}
             <th>${esc(T.colCode)}</th>

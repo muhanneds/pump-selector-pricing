@@ -1371,6 +1371,13 @@ function renderSummarySheet(){
           <input type="checkbox" ${proformaNema ? 'checked' : ''} onchange="toggleProformaNema()">
           <span>${t('nemaColumn')}</span>
         </label>
+        <div class="pf-langpick" role="group" aria-label="${t('docFlowUnit')}">
+          <span class="pf-langpick-label">${t('docFlowUnit')}</span>
+          <button type="button" class="pf-langbtn${proformaFlow==='m3h' ? ' active' : ''}"
+                  onclick="setProformaFlow('m3h')">m³/h</button>
+          <button type="button" class="pf-langbtn${proformaFlow==='ls' ? ' active' : ''}"
+                  onclick="setProformaFlow('ls')">L/s</button>
+        </div>
 ` : ''}
         <div class="summary-actions">
           <button type="button" class="btn btn-ghost btn-sm" onclick="downloadSummaryCSV()">${t('downloadCsv')}</button>
@@ -1483,7 +1490,7 @@ const PF_TEXT = {
     tel: 'Tel:', email: 'E-Mail:',
     piNo: 'Proforma I. No:', date: 'Date',
     buyerName: 'Buyer name', buyerAddress: 'Buyer address',
-    colNo: 'No.', colQ: 'Q m³/ hour', colHm: 'Hm', colSuction: 'Suction / NEMA',
+    colNo: 'No.', colQ: 'Q m³/ hour', colQls: 'Q L/s', colHm: 'Hm', colSuction: 'Suction / NEMA',
     colCode: 'Product Code', colDesc: 'Product Description', colQty: 'Qty',
     colUnit: 'Unit<br>Price', colTotal: 'Total<br>Price',
     colUnitFlat: 'Unit Price', colTotalFlat: 'Total Price',
@@ -1515,7 +1522,7 @@ const PF_TEXT = {
     tel: 'Tel:', email: 'E-Posta:',
     piNo: 'Proforma Fatura No:', date: 'Tarih',
     buyerName: 'Alıcı adı', buyerAddress: 'Alıcı adresi',
-    colNo: 'No.', colQ: 'Q m³/ saat', colHm: 'Hm', colSuction: 'Emme / NEMA',
+    colNo: 'No.', colQ: 'Q m³/ saat', colQls: 'Q L/s', colHm: 'Hm', colSuction: 'Emme / NEMA',
     colCode: 'Ürün Kodu', colDesc: 'Ürün Açıklaması', colQty: 'Adet',
     colUnit: 'Birim<br>Fiyat', colTotal: 'Toplam<br>Fiyat',
     colUnitFlat: 'Birim Fiyat', colTotalFlat: 'Toplam Fiyat',
@@ -1708,7 +1715,7 @@ function proformaLines(){
         if (motor) desc += ' + ' + T.dMotor + ' ' + line.motorCode.trim()
                         + ' (' + motor.size + (motor.len ? ', L ' + motor.len + ' mm' : '') + ')';
         out.push({
-          q: pfNum(Q), hm: pfNum(H),
+          q: pfFlow(Q), hm: pfNum(H),
           suction: PF_BORE_LABEL[line.sizeClass] || '',
           code: m.name + (motor ? ' + ' + line.motorCode.trim() : ''),
           desc: desc, qty: qty, unit: unit, total: unit * qty
@@ -1758,6 +1765,41 @@ function pfDate(iso){
 }
 
 const STORE_KEY_PROFORMA_NEMA = 'msp_proforma_nema_v1';
+const STORE_KEY_PROFORMA_FLOW = 'msp_proforma_flow_v1';
+
+// The flow unit the document states its duty points in. Like the document's
+// language, it is its own setting rather than the app's: the selector is
+// worked in whichever unit suits the person using it, while the buyer is
+// quoted in whichever unit their tender was written in, and those are often
+// not the same. Until it is set explicitly it follows the app's own unit,
+// which is the right guess most of the time.
+let proformaFlow = loadProformaFlow();
+function loadProformaFlow(){
+  try{
+    const v = localStorage.getItem(STORE_KEY_PROFORMA_FLOW);
+    if (v === 'm3h' || v === 'ls') return v;
+  }catch(e){}
+  return (typeof flowUnit !== 'undefined' && flowUnit === 'ls') ? 'ls' : 'm3h';
+}
+function setProformaFlow(next){
+  if (next !== 'm3h' && next !== 'ls') return;
+  proformaFlow = next;
+  try{ localStorage.setItem(STORE_KEY_PROFORMA_FLOW, next); }catch(e){}
+  showSummary(summaryPrimary);
+}
+// Q is stored in m³/h throughout the app (the unit the pump curves are
+// digitised in), so the document converts on the way out only. Three decimals
+// matches what the app's own L/s field shows, so a duty point typed in L/s
+// comes back out on the proforma as the number that was typed.
+function pfFlow(storedMh){
+  const n = Number(storedMh);
+  if (isNaN(n)) return '';
+  return String(proformaFlow === 'ls' ? round(n / 3.6, 3) : round(n, 2));
+}
+// The column heading carries the unit, so it changes with it.
+function pfFlowHeader(){
+  return proformaFlow === 'ls' ? pfT().colQls : pfT().colQ;
+}
 
 // The Suction / NEMA column is on the workbook's sheet but is not always
 // filled: it says something for a pump (the borehole size) and for a bare
@@ -1839,7 +1881,7 @@ function proformaHTML(){
       <table class="pf-table">
         <colgroup>${colgroup}</colgroup>
         <thead><tr>
-          <th>${esc(T.colNo)}</th><th>${esc(T.colQ)}</th><th>${esc(T.colHm)}</th>
+          <th>${esc(T.colNo)}</th><th>${esc(pfFlowHeader())}</th><th>${esc(T.colHm)}</th>
           ${proformaNema ? `<th>${esc(T.colSuction)}</th>` : ''}
           <th>${esc(T.colCode)}</th><th>${esc(T.colDesc)}</th>
           <th>${esc(T.colQty)}</th><th>${T.colUnit}</th><th>${T.colTotal}</th>
@@ -1906,8 +1948,8 @@ function proformaCSVRows(){
   const unitCol = T.colUnitFlat + ' (' + PF_CURRENCY_CODE + ')';
   const totalCol = T.colTotalFlat + ' (' + PF_CURRENCY_CODE + ')';
   out.push(proformaNema
-    ? [T.colNo, T.colQ, T.colHm, T.colSuction, T.colCode, T.colDesc, T.colQty, unitCol, totalCol]
-    : [T.colNo, T.colQ, T.colHm, T.colCode, T.colDesc, T.colQty, unitCol, totalCol]);
+    ? [T.colNo, pfFlowHeader(), T.colHm, T.colSuction, T.colCode, T.colDesc, T.colQty, unitCol, totalCol]
+    : [T.colNo, pfFlowHeader(), T.colHm, T.colCode, T.colDesc, T.colQty, unitCol, totalCol]);
   proformaLines().forEach(function(r,i){
     out.push(proformaNema
       ? [i+1, r.q, r.hm, r.suction, r.code, r.desc, r.qty, r.unit, r.total]
