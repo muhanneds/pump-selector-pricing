@@ -1928,52 +1928,96 @@ function proformaHTML(){
 // close enough to the workbook to be pasted straight into it. It carries the
 // document's language, not the app's, for the same reason the printed page
 // does: the two copies have to say the same thing.
+// The CSV opened in Excel has to look like the PI sheet, which means the
+// label/value rows have to line up with the line table under them. On the
+// sheet a label occupies A:D and its value starts at E, so that is where the
+// values go here too -- putting them in B, as this used to, left the whole
+// header block sitting under the Q and Hm columns and reading as ragged.
 function proformaCSVRows(){
   const T = pfT();
   const out = [];
-  out.push([PF_FIXED.company]);
-  out.push([PF_FIXED.address + ' / ' + T.vOrigin, PF_FIXED.contact]);
-  out.push([T.title]);
-  out.push([]);
-  out.push([T.applicant, pfDoc.applicant]);
-  out.push([T.applicantAdd, pfDoc.applicantAdd]);
-  out.push([T.beneficiary, PF_FIXED.beneficiary]);
-  out.push([T.beneficiaryAdd, PF_FIXED.beneficiaryAdd]);
-  out.push([T.tel, pfDoc.tel]);
-  out.push([T.email, pfDoc.email]);
-  out.push([T.piNo, pfDoc.piNo, '', '', '', '', T.date, pfDate(pfDoc.date)]);
-  out.push([T.description]);
+  const nema = proformaNema;
+  const width = nema ? 9 : 8;          // A..I with the NEMA column, A..H without
+  const VALUE_COL = 4;                 // column E, as on the sheet
+
+  // A label/value line: label in A, value in E, the row padded to the table's
+  // width so every row in the file has the same number of fields.
+  function row(label, value){
+    const r = new Array(width).fill('');
+    r[0] = label === null || label === undefined ? '' : label;
+    if (value !== null && value !== undefined && value !== '') r[VALUE_COL] = value;
+    return r;
+  }
+  function band(text){
+    const r = new Array(width).fill('');
+    r[0] = text;
+    return r;
+  }
+  const blank = () => new Array(width).fill('');
+
+  out.push(band(PF_FIXED.company));
+  out.push(row(PF_FIXED.address + ' / ' + T.vOrigin, PF_FIXED.contact));
+  out.push(band(T.title));
+  out.push(blank());
+  out.push(row(T.applicant, pfDoc.applicant));
+  out.push(row(T.applicantAdd, pfDoc.applicantAdd));
+  out.push(row(T.beneficiary, PF_FIXED.beneficiary));
+  out.push(row(T.beneficiaryAdd, PF_FIXED.beneficiaryAdd));
+  out.push(row(T.tel, pfDoc.tel));
+  out.push(row(T.email, pfDoc.email));
+  // Number and date are their own rows rather than sharing one. Sharing meant
+  // "Date" landing under whichever column happened to be seventh, which moved
+  // when the NEMA column did.
+  out.push(row(T.piNo, pfDoc.piNo));
+  out.push(row(T.date, pfDate(pfDoc.date)));
+  out.push(blank());
+  out.push(band(T.description));
+
   // The figures stay raw so Excel can sum them; the currency goes in the
   // heading instead of in front of every number.
   const unitCol = T.colUnitFlat + ' (' + PF_CURRENCY_CODE + ')';
   const totalCol = T.colTotalFlat + ' (' + PF_CURRENCY_CODE + ')';
-  out.push(proformaNema
+  out.push(nema
     ? [T.colNo, pfFlowHeader(), T.colHm, T.colSuction, T.colCode, T.colDesc, T.colQty, unitCol, totalCol]
     : [T.colNo, pfFlowHeader(), T.colHm, T.colCode, T.colDesc, T.colQty, unitCol, totalCol]);
+  // Money is rounded to the cent. The engine's own figures carry a long tail
+  // from the discount arithmetic (891.053414375), and a price on an invoice
+  // that does not match the one on the printed page to the cent is a defect,
+  // however small the difference.
+  const cents = n => Math.round(Number(n) * 100) / 100;
   proformaLines().forEach(function(r,i){
-    out.push(proformaNema
-      ? [i+1, r.q, r.hm, r.suction, r.code, r.desc, r.qty, r.unit, r.total]
-      : [i+1, r.q, r.hm, r.code, r.desc, r.qty, r.unit, r.total]);
+    out.push(nema
+      ? [i+1, r.q, r.hm, r.suction, r.code, r.desc, r.qty, cents(r.unit), cents(r.total)]
+      : [i+1, r.q, r.hm, r.code, r.desc, r.qty, cents(r.unit), cents(r.total)]);
   });
-  out.push(proformaNema ? ['','','','','','', T.total, '', proformaTotal()]
-                        : ['','','','','', T.total, '', proformaTotal()]);
-  out.push([]);
-  out.push([T.paymentTerm, pfDoc.paymentTerm]);
-  out.push([T.deliveryTime, pfDoc.deliveryTime]);
-  out.push([T.origin, T.vOrigin]);
-  out.push([T.shipmentTerms, pfDoc.shipmentTerms]);
-  out.push([T.hsCode, T.vHsCode]);
-  out.push([T.packing, T.vPacking]);
-  out.push([T.brandName, PF_FIXED.brand]);
-  out.push([]);
-  out.push([T.bankInfo]);
-  out.push([T.bank, PF_FIXED.bank]);
-  out.push([T.branch, PF_FIXED.branch]);
-  out.push([T.swift, PF_FIXED.swift]);
-  out.push([T.iban, PF_FIXED.iban]);
-  out.push([T.bankBeneficiary, PF_FIXED.beneficiary]);
-  out.push([T.bankBeneficiaryAdd, PF_FIXED.beneficiaryAdd]);
-  out.push([T.originCaps, T.vOrigin]);
+
+  // TOTAL sits in the last column but one, directly beside its figure, so the
+  // two read together however many columns the table has.
+  const totalRow = new Array(width).fill('');
+  totalRow[width-2] = T.total;
+  totalRow[width-1] = cents(proformaTotal());
+  out.push(totalRow);
+  // The amount in words is on the printed document; the file should not say
+  // less than the paper does.
+  out.push(row(T.amountInWords, Print.amountInWords(proformaTotal(), proformaLang)));
+
+  out.push(blank());
+  out.push(row(T.paymentTerm, pfDoc.paymentTerm));
+  out.push(row(T.deliveryTime, pfDoc.deliveryTime));
+  out.push(row(T.origin, T.vOrigin));
+  out.push(row(T.shipmentTerms, pfDoc.shipmentTerms));
+  out.push(row(T.hsCode, T.vHsCode));
+  out.push(row(T.packing, T.vPacking));
+  out.push(row(T.brandName, PF_FIXED.brand));
+  out.push(blank());
+  out.push(band(T.bankInfo));
+  out.push(row(T.bank, PF_FIXED.bank));
+  out.push(row(T.branch, PF_FIXED.branch));
+  out.push(row(T.swift, PF_FIXED.swift));
+  out.push(row(T.iban, PF_FIXED.iban));
+  out.push(row(T.bankBeneficiary, PF_FIXED.beneficiary));
+  out.push(row(T.bankBeneficiaryAdd, PF_FIXED.beneficiaryAdd));
+  out.push(row(T.originCaps, T.vOrigin));
   return out;
 }
 
