@@ -76,18 +76,27 @@ const Print = (function(){
     return parts.join(' ');
   }
 
-  // Cents are written as a fraction of 100, the way an invoice does it, rather
-  // than spelled out -- "and 48/100" is the form a bank expects.
+  // The words are a sentence, not a formula. "AND 00/100" is filler on a total
+  // that has no cents, and mixing spelled words with a written fraction reads
+  // as neither one thing nor the other -- so cents are spelled when there are
+  // any and left unsaid when there are none.
+  //
+  // English closes with ONLY, which is what stops anything being added after
+  // the amount. Turkish opens with YALNIZ, which does the same job at the
+  // front, so it does not also close.
   function amountInWords(total, lang){
     const whole = Math.floor(total);
     const cents = Math.round((total - whole) * 100);
-    const cc = String(cents).padStart(2, '0');
     if (lang === 'tr'){
+      let s = 'Yalnız ' + trWords(whole) + ' ABD Doları';
+      if (cents) s += ' ' + trWords(cents) + ' Sent';
       // Turkish casing, not the default: toUpperCase() would turn the dotted
       // i of "bin" into a dotless I, so three thousand reads as ÜÇ BIN.
-      return ('ABD Doları ' + trWords(whole) + ' ve ' + cc + '/100').toLocaleUpperCase('tr-TR');
+      return s.toLocaleUpperCase('tr-TR');
     }
-    return ('US Dollars ' + enWords(whole) + ' and ' + cc + '/100').toUpperCase();
+    let s = 'US Dollars ' + enWords(whole);
+    if (cents) s += ' and ' + enWords(cents) + (cents === 1 ? ' cent' : ' cents');
+    return (s + ' only').toUpperCase();
   }
 
   // --- shared pieces --------------------------------------------------------

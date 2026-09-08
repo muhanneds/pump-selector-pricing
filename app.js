@@ -1503,7 +1503,7 @@ const PF_TEXT = {
     colUnit: 'Birim<br>Fiyat', colTotal: 'Toplam<br>Fiyat',
     colUnitFlat: 'Birim Fiyat', colTotalFlat: 'Toplam Fiyat',
     total: 'TOPLAM', noLines: 'Henüz fiyatlı satır yok',
-    amountInWords: 'Yalnız (yazı ile)',
+    amountInWords: 'Tutar (yazı ile)',
     paymentTerm: 'Ödeme Şekli', deliveryTime: 'Teslim Süresi', origin: 'Menşei',
     shipmentTerms: 'Teslim Şekli', hsCode: 'GTİP Kodu', packing: 'Ambalaj',
     brandName: 'Marka',
